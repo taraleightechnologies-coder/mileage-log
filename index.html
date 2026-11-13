@@ -1,0 +1,1494 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mileage &amp; Expense Log</title>
+<meta name="description" content="Log business mileage, meals and expenses with receipt photos and export for your accountant.">
+<meta name="theme-color" content="#f5f6f8">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mileage Log">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+:root{
+  --bg:#f5f6f8; --card:#ffffff; --text:#1d2330; --muted:#667085; --line:#e3e6eb;
+  --accent:#1f6feb; --accent-text:#ffffff; --warn:#b54708; --warn-bg:#fff4e5; --danger:#c62828;
+  --good:#067647; --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#12151b; --card:#1b2029; --text:#e7eaf0; --muted:#9aa3b2; --line:#2c3340;
+    --accent:#4c8dff; --warn:#f5a524; --warn-bg:#3a2a12; --danger:#ff6b6b; --good:#4ade80; --shadow:none}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;max-width:960px;margin:0 auto}
+h1{font-size:19px;margin:0}
+h2{font-size:16px;margin:0 0 10px}
+select,input,textarea,button{font:inherit;color:inherit}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+textarea{min-height:60px;resize:vertical}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:10px}
+label > input,label > select,label > textarea{margin-top:4px;font-size:15px}
+.check{display:flex;align-items:center;gap:8px;color:var(--text);font-size:15px}
+.check input{width:auto}
+nav.tabs{display:flex;gap:4px;max-width:960px;margin:0 auto;padding:0 16px;overflow-x:auto}
+nav.tabs button{border:0;background:transparent;padding:10px 14px;border-radius:8px 8px 0 0;color:var(--muted);cursor:pointer;white-space:nowrap;font-weight:600}
+nav.tabs button.active{background:var(--card);color:var(--text);box-shadow:var(--shadow)}
+main{max-width:960px;margin:0 auto;padding:0 16px 40px}
+section{display:none;background:var(--card);border-radius:0 12px 12px 12px;padding:16px;box-shadow:var(--shadow)}
+section.active{display:block}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);padding:9px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
+.btn.danger{color:var(--danger)}
+.btn.small{padding:5px 10px;font-size:13px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:12px}
+.stat .k{font-size:13px;color:var(--muted)}
+.stat .v{font-size:24px;font-weight:700;margin-top:2px}
+.stat .s{font-size:12px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.item{border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;justify-content:space-between;gap:10px}
+.item:hover{border-color:var(--accent)}
+.item .t{font-weight:600}
+.item .m{font-size:13px;color:var(--muted)}
+.item .amt{font-weight:700;text-align:right;white-space:nowrap}
+.badge{display:inline-block;font-size:12px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);margin-top:4px}
+.badge.warn{color:var(--warn);background:var(--warn-bg);border-color:transparent}
+.empty{color:var(--muted);text-align:center;padding:30px 10px}
+.notice{background:var(--warn-bg);color:var(--warn);padding:10px 12px;border-radius:8px;margin-bottom:14px;font-size:14px}
+.hint{font-size:13px;color:var(--muted)}
+.preview{background:var(--bg);border-radius:8px;padding:8px 10px;font-weight:600;margin-bottom:10px}
+dialog{border:0;border-radius:14px;padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 24px);background:var(--card);color:var(--text);box-shadow:0 10px 40px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog form{padding:16px}
+.dlg-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.dlg-foot{display:flex;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
+.thumb{position:relative;width:76px;height:76px;border:1px solid var(--line);border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:11px;text-align:center;background:var(--bg);cursor:pointer}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb .x{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;line-height:22px;padding:0}
+#viewer img{display:block;max-width:100%;max-height:80vh;margin:0 auto}
+.hidden{display:none !important}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
+.chip{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.addr-target{outline:2px solid var(--accent);outline-offset:1px}
+.stop-row{display:flex;gap:8px;align-items:flex-end}
+.stop-row label{flex:1}
+.stop-row .btn{margin-bottom:10px}
+.place-row{display:grid;grid-template-columns:minmax(90px,1fr) 2.2fr auto;gap:8px;align-items:center;margin-bottom:8px}
+.place-row .hint{grid-column:1/-1;margin-top:-4px}
+@media (max-width:560px){.place-row{grid-template-columns:1fr auto}.place-row input[data-paddr]{grid-column:1/-1;grid-row:2}}
+.gps-box{border:2px solid var(--accent);border-radius:12px;padding:12px;margin-bottom:12px}
+.gps-box .t{font-weight:700;margin-bottom:4px}
+.gps-box ol{margin:6px 0 10px;padding-left:22px;font-size:14px}
+.scan-box{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bg);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.scan-box .hint{flex:1;min-width:180px}
+.scan-box .busy{opacity:.6;pointer-events:none}
+.item .del{border:0;background:transparent;cursor:pointer;font-size:16px;padding:4px 6px;border-radius:6px;opacity:.55;align-self:center}
+.item .del:hover{opacity:1;background:var(--line)}
+.linked-box{border:1px dashed var(--line);border-radius:10px;padding:10px 12px;margin:4px 0 12px}
+.linked-row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);cursor:pointer;font-size:14px}
+.linked-row:hover{color:var(--accent)}
+.linked-box [data-linked-list]{margin:6px 0 10px}
+.linked-note{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:14px}
+.day-head{display:flex;justify-content:space-between;gap:10px;font-size:13px;font-weight:700;color:var(--muted);padding:10px 4px 2px;border-bottom:1px solid var(--line)}
+.day-head:first-child{padding-top:0}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .sub{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.brand h1{font-size:22px;line-height:1.2}
+.icon-btn{border:0;background:transparent;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:6px;opacity:.6}
+.icon-btn:hover{opacity:1;background:var(--line)}
+.biz-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:8px}
+.biz-row .t{font-weight:600}
+.car{width:110px;height:auto;flex:none}
+.car-body{animation:bounce 1.6s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}
+@media (prefers-reduced-motion: reduce){.car-body{animation:none}}
+@media (max-width:560px){.car{width:84px}}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--card);padding:8px 16px;cursor:pointer;font-weight:600;color:var(--muted)}
+.seg button.active{background:var(--accent);color:var(--accent-text)}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px;margin:12px 0 26px}
+.swatch{border:2px solid var(--line);border-radius:12px;padding:6px;background:var(--card);cursor:pointer;text-align:center;font-weight:600;font-size:13px;color:var(--text)}
+.swatch.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.swatch .chips{display:flex;height:46px;border-radius:8px;overflow:hidden;margin-bottom:6px}
+.swatch .chips span{flex:1;display:flex;align-items:center;justify-content:center;gap:4px}
+.swatch .chips i{width:15px;height:15px;border-radius:50%;display:block}
+#printArea{display:none}
+@media print{
+  body{background:#fff;color:#000;font-size:11px}
+  body > *:not(#printArea){display:none !important}
+  #printArea{display:block}
+  #printArea h1{font-size:18px;margin:0 0 2px}
+  #printArea h2{font-size:14px;margin:18px 0 6px}
+  #printArea table{font-size:10.5px;page-break-inside:auto}
+  #printArea tr{page-break-inside:avoid}
+  #printArea th,#printArea td{border-bottom:1px solid #ccc;padding:4px 5px;color:#000}
+  #printArea tfoot td{font-weight:700;border-top:2px solid #000}
+  #printArea .sum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+  #printArea .sum div{border:1px solid #999;border-radius:6px;padding:6px 8px}
+  #printArea .sum b{display:block;font-size:15px}
+  #printArea .note{color:#444;font-size:10px}
+  @page{size:landscape;margin:12mm}
+}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}.stat .v{font-size:20px}header{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg class="car" viewBox="0 0 175 72" role="img" aria-label="Retro car">
+      <g stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" opacity=".55">
+        <line x1="2" y1="30" x2="16" y2="30"/><line x1="6" y1="40" x2="20" y2="40"/><line x1="0" y1="50" x2="14" y2="50"/>
+      </g>
+      <line x1="10" y1="69" x2="172" y2="69" stroke="var(--line)" stroke-width="3" stroke-dasharray="14 9" stroke-linecap="round"/>
+      <g class="car-body">
+        <path d="M25,48 Q25,36 39,34 L59,32 Q71,15 95,14 L115,14 Q133,15 143,32 L157,35 Q167,37 167,48 L167,53 Q167,57 163,57 L29,57 Q25,57 25,53 Z" fill="var(--accent)"/>
+        <path d="M66,32 Q74,20 92,19.5 L98,19.5 L98,32 Z" fill="var(--card)" opacity=".85"/>
+        <path d="M104,19.5 L114,19.5 Q128,20.5 135,32 L104,32 Z" fill="var(--card)" opacity=".85"/>
+        <rect x="29" y="42" width="134" height="3" rx="1.5" fill="var(--card)" opacity=".75"/>
+        <rect x="20" y="48" width="10" height="6" rx="3" fill="var(--muted)"/>
+        <rect x="162" y="48" width="10" height="6" rx="3" fill="var(--muted)"/>
+        <circle cx="162" cy="40" r="3.4" fill="#ffd76a"/>
+        <circle cx="29" cy="40" r="2.6" fill="#ff6b6b"/>
+        <g class="wheel"><circle cx="55" cy="57" r="11" fill="var(--text)"/><circle cx="55" cy="57" r="7" fill="none" stroke="var(--card)" stroke-width="2.2"/><circle cx="55" cy="57" r="2.6" fill="var(--card)"/></g>
+        <g class="wheel"><circle cx="137" cy="57" r="11" fill="var(--text)"/><circle cx="137" cy="57" r="7" fill="none" stroke="var(--card)" stroke-width="2.2"/><circle cx="137" cy="57" r="2.6" fill="var(--card)"/></g>
+      </g>
+    </svg>
+    <div>
+      <div class="sub">Mileage &amp; Expense Log</div>
+      <h1><span id="bizTitle">My Business</span> <button class="icon-btn" id="renameBiz" title="Rename this business">✏️</button></h1>
+    </div>
+  </div>
+  <div class="row" style="gap:10px">
+    <label style="margin:0;min-width:170px">Business <select id="bizSel"></select></label>
+    <label style="margin:0;min-width:100px">Tax year <select id="year"></select></label>
+    <button class="btn primary hidden" id="installBtn" style="align-self:flex-end">⬇ Install app</button>
+  </div>
+</header>
+<nav class="tabs">
+  <button data-tab="summary" class="active">Summary</button>
+  <button data-tab="trips">Trips</button>
+  <button data-tab="expenses">Meals &amp; Expenses</button>
+  <button data-tab="equipment">Tools &amp; Equipment</button>
+  <button data-tab="settings">Settings &amp; Backup</button>
+</nav>
+<main>
+  <!-- SUMMARY -->
+  <section id="tab-summary" class="active">
+    <div id="backupNotice" class="notice hidden"></div>
+    <div class="stats" id="stats"></div>
+    <div class="row" style="margin-bottom:18px">
+      <button class="btn primary" id="btnPackage">Download accountant package (.zip)</button>
+      <button class="btn" id="btnTripsCsv">Trips CSV</button>
+      <button class="btn" id="btnExpCsv">Expenses CSV</button>
+      <button class="btn" id="btnEqCsv">Tools &amp; equipment CSV</button>
+      <button class="btn" id="btnPrint">🖨 Print tax report</button>
+    </div>
+    <p class="hint" style="margin-top:-8px">The package contains all the CSV files, a summary, and every receipt for the year, named to match the CSV rows.</p>
+    <div class="grid2">
+      <div><h2>Expenses by category</h2><table id="catTable"></table></div>
+      <div><h2>Miles by vehicle</h2><table id="vehTable"></table></div>
+    </div>
+    <div class="row" style="justify-content:space-between;margin-top:16px;margin-bottom:10px">
+      <h2 style="margin:0">Totals by <span id="groupLabel">day</span></h2>
+      <div class="seg" id="groupBtns"><button data-group="day">Day</button><button data-group="week">Week</button><button data-group="month">Month</button></div>
+    </div>
+    <div class="row" style="margin-bottom:8px">
+      <label style="margin:0;flex:1;min-width:130px">From <input type="date" id="rangeFrom"></label>
+      <label style="margin:0;flex:1;min-width:130px">To <input type="date" id="rangeTo"></label>
+      <button class="btn small" id="rangeClear" style="align-self:flex-end">Whole year</button>
+    </div>
+    <table id="monthTable"></table>
+  </section>
+
+  <!-- TRIPS -->
+  <section id="tab-trips">
+    <div id="gpsBox" class="gps-box hidden"></div>
+    <div class="row">
+      <button class="btn primary" id="gpsStart">🚗 Start trip (GPS)</button>
+      <button class="btn" id="addTrip">+ Add trip</button>
+      <input id="tripSearch" type="search" placeholder="Search trips…" style="flex:1;min-width:160px">
+      <button class="btn" id="tripCsv2">⬇ Download CSV</button>
+    </div>
+    <div class="list" id="tripList"></div>
+  </section>
+
+  <!-- EXPENSES -->
+  <section id="tab-expenses">
+    <div class="row">
+      <button class="btn primary" id="addExp">+ Add meal / expense</button>
+      <input id="expSearch" type="search" placeholder="Search expenses…" style="flex:1;min-width:160px">
+      <button class="btn" id="expCsv2">⬇ Download CSV</button>
+    </div>
+    <div class="list" id="expList"></div>
+  </section>
+
+  <!-- TOOLS & EQUIPMENT -->
+  <section id="tab-equipment">
+    <div class="row">
+      <button class="btn primary" id="addEq">+ Add tool / equipment</button>
+      <input id="eqSearch" type="search" placeholder="Search tools &amp; equipment…" style="flex:1;min-width:160px">
+      <button class="btn" id="eqCsv2">⬇ Download CSV</button>
+    </div>
+    <p class="hint" style="margin:8px 0 0">For tools, machines, computers and other gear you buy for the business. Larger items may need to be depreciated instead of deducted all at once; your accountant will decide using this list.</p>
+    <div class="list" id="eqList"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="tab-settings">
+    <h2>Appearance</h2>
+    <div class="seg" id="modeBtns">
+      <button data-mode="auto">Auto</button><button data-mode="light">Light</button><button data-mode="dark">Dark</button>
+    </div>
+    <span class="hint" style="margin-left:8px">Auto follows your device's light/dark setting.</span>
+    <div class="swatches" id="swatches"></div>
+
+    <h2>Businesses</h2>
+    <p class="hint">Each business keeps its own trips, expenses, receipts, exports and printed reports. Switch between them with the Business menu at the top.</p>
+    <div id="bizList"></div>
+    <button class="btn" id="addBiz" style="margin-bottom:26px">+ Add business</button>
+
+    <h2>Saved places</h2>
+    <p class="hint">Home, work and other places you drive to often. In the trip form, tap a saved place to fill in its address. GPS trips that start or stop near a saved place use its name.</p>
+    <div id="placesList"></div>
+    <button class="btn" id="addPlace" style="margin-bottom:26px">+ Add place</button>
+
+    <h2>IRS standard mileage rates</h2>
+    <p class="hint">Each trip uses the rate in effect on its date. In 2026 the IRS raised the business rate mid-year: 72.5¢ for Jan 1–Jun 30, then 76¢ from Jul 1. You can edit these or add new rates when the IRS announces them.</p>
+    <table id="rateTable"></table>
+    <div class="row" style="margin:10px 0 24px">
+      <input type="date" id="newRateDate" style="width:auto">
+      <input type="number" id="newRateVal" step="0.001" min="0" placeholder="Rate $/mile e.g. 0.76" style="width:190px">
+      <button class="btn" id="addRate">Add rate</button>
+    </div>
+
+    <h2>Backup &amp; restore</h2>
+    <p class="hint">Your entries and receipt photos are saved inside this browser on this device only. Download a backup regularly (for example monthly) and keep it somewhere safe such as OneDrive or Google Drive. A backup can also be restored on another device to move your log there.</p>
+    <p id="lastBackup" class="hint"></p>
+    <div class="row">
+      <button class="btn primary" id="btnBackup">Download backup</button>
+      <button class="btn" id="btnRestore">Restore from backup…</button>
+      <input type="file" id="restoreFile" accept=".json,application/json" class="hidden">
+    </div>
+    <p id="storageInfo" class="hint" style="margin-top:14px"></p>
+  </section>
+</main>
+
+<!-- TRIP DIALOG -->
+<dialog id="tripDlg">
+  <form id="tripForm" method="dialog">
+    <div class="dlg-head"><h2 id="tripTitle" style="margin:0">Add trip</h2><button type="button" class="btn small" data-close>Close</button></div>
+    <div class="grid2">
+      <label>Date<input type="date" name="date" required></label>
+      <label>Vehicle<input name="vehicle" list="vehicleList" placeholder="e.g. Honda CR-V"></label>
+    </div>
+    <div class="chips" id="placeChips"></div>
+    <label>From<input name="from" list="placeList" placeholder="Start location" data-addr></label>
+    <div id="stopsBox"></div>
+    <button type="button" class="btn small" id="addStop" style="margin:-4px 0 10px">+ Add a stop</button>
+    <label>To (final destination)<input name="to" list="placeList" placeholder="Destination" data-addr></label>
+    <div class="row" style="margin:-4px 0 4px">
+      <button type="button" class="btn small" id="calcMiles">📍 Calculate miles from addresses</button>
+      <label class="check" style="margin:0"><input type="checkbox" name="roundTrip"> Round trip (doubles the miles)</label>
+    </div>
+    <div class="hint" id="calcStatus" style="margin-bottom:10px">Use a street address, or a business name plus city and state.</div>
+    <label>Business purpose<input name="purpose" required placeholder="e.g. Client meeting, site visit"></label>
+    <label>Client / project<input name="client" list="clientList" placeholder="Optional"></label>
+    <div class="grid2">
+      <label>Odometer start<input type="number" name="odoStart" step="0.1" min="0" inputmode="decimal"></label>
+      <label>Odometer end<input type="number" name="odoEnd" step="0.1" min="0" inputmode="decimal"></label>
+    </div>
+    <label>Miles (one way if round trip is on)<input type="number" name="miles" step="0.1" min="0" required inputmode="decimal"></label>
+    <div class="preview" id="tripPreview"></div>
+    <label>Notes<textarea name="notes" placeholder="Optional"></textarea></label>
+    <div class="hint">Receipts (parking, tolls, etc.)</div>
+    <div class="thumbs" data-thumbs></div>
+    <label class="btn small" style="display:inline-flex;margin-bottom:10px">📎 Add photo / file<input type="file" accept="image/*,application/pdf" multiple data-file class="hidden"></label>
+    <div class="linked-box">
+      <div class="hint" style="font-weight:600">Meals &amp; expenses for this trip</div>
+      <div data-linked-list></div>
+      <button type="button" class="btn" data-add-linked>🍽 + Add meal / expense for this trip</button>
+      <div class="hint" style="margin-top:4px">Saves this trip, then opens a meal / expense form linked to it.</div>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" class="btn danger" data-delete>Delete</button>
+      <span class="row"><button type="button" class="btn" data-close>Cancel</button><button type="submit" class="btn primary">Save trip</button></span>
+    </div>
+  </form>
+</dialog>
+
+<!-- EXPENSE DIALOG -->
+<dialog id="expDlg">
+  <form id="expForm" method="dialog">
+    <div class="dlg-head"><h2 id="expTitle" style="margin:0">Add meal / expense</h2><button type="button" class="btn small" data-close>Close</button></div>
+<div class="scan-box"><label class="btn primary">📷 Scan receipt<input type="file" accept="image/*" data-scan class="hidden"></label><span class="hint" data-scan-status>Take or choose a photo of the receipt and the app fills in what it can read. Always check the numbers.</span></div>
+    <div class="grid2">
+      <label>Date<input type="date" name="date" required></label>
+      <label>Type<select name="category" required>
+        <option>Meal</option><option>Parking</option><option>Tolls</option><option>Travel / lodging</option>
+        <option>Supplies</option><option>Phone / internet</option><option>Other</option></select></label>
+    </div>
+    <label>Place / vendor<input name="vendor" list="vendorList" placeholder="e.g. Olive Garden"></label>
+    <div class="grid2">
+      <label>Amount ($)<input type="number" name="amount" step="0.01" min="0" required inputmode="decimal"></label>
+      <label data-meal>Tip ($)<input type="number" name="tip" step="0.01" min="0" inputmode="decimal"></label>
+    </div>
+    <label>Payment method<select name="payment">
+      <option value=""></option><option>Credit card</option><option>Debit card</option><option>Cash</option><option>Check</option><option>Other</option></select></label>
+    <input type="hidden" name="tripId">
+    <div class="linked-note hidden" data-trip-note><span data-trip-text></span> <button type="button" class="btn small" data-unlink>Unlink</button></div>
+    <label>Business reason<input name="reason" required placeholder="e.g. Discussed Q3 contract with client"></label>
+    <label data-meal>Who attended (optional)<input name="attendees" placeholder="e.g. Jane Smith (ABC Co.)"></label>
+    <div class="preview" id="expPreview"></div>
+    <label>Notes<textarea name="notes" placeholder="Optional"></textarea></label>
+    <div class="hint">Receipts</div>
+    <label class="check" style="margin:6px 0 2px"><input type="checkbox" name="paperKept"> 📄 Paper receipt kept (stored somewhere safe)</label>
+    <div class="thumbs" data-thumbs></div>
+    <label class="btn small" style="display:inline-flex;margin-bottom:10px">📎 Add photo / file<input type="file" accept="image/*,application/pdf" multiple data-file class="hidden"></label>
+    <div class="dlg-foot">
+      <button type="button" class="btn danger" data-delete>Delete</button>
+      <span class="row"><button type="button" class="btn" data-close>Cancel</button><button type="submit" class="btn primary">Save</button></span>
+    </div>
+  </form>
+</dialog>
+
+<!-- TOOLS & EQUIPMENT DIALOG -->
+<dialog id="eqDlg">
+  <form id="eqForm" method="dialog">
+    <div class="dlg-head"><h2 style="margin:0">Add tool / equipment</h2><button type="button" class="btn small" data-close>Close</button></div>
+<div class="scan-box"><label class="btn primary">📷 Scan receipt<input type="file" accept="image/*" data-scan class="hidden"></label><span class="hint" data-scan-status>Take or choose a photo of the receipt and the app fills in what it can read. Always check the numbers.</span></div>
+    <div class="grid2">
+      <label>Purchase date<input type="date" name="date" required></label>
+      <label>Type<select name="category" required>
+        <option>Tools</option><option>Equipment / machinery</option><option>Computer / electronics</option><option>Phone / tablet</option>
+        <option>Software</option><option>Furniture</option><option>Vehicle equipment</option><option>Safety gear</option><option>Other</option></select></label>
+    </div>
+    <label>Item<input name="item" required placeholder="e.g. DeWalt cordless drill"></label>
+    <label>Store / vendor<input name="vendor" list="vendorList" placeholder="e.g. Home Depot"></label>
+    <div class="grid2">
+      <label>Cost ($)<input type="number" name="amount" step="0.01" min="0" required inputmode="decimal"></label>
+      <label>Business use (%)<input type="number" name="bizPct" step="1" min="0" max="100" inputmode="numeric"></label>
+    </div>
+    <label>Payment method<select name="payment">
+      <option value=""></option><option>Credit card</option><option>Debit card</option><option>Cash</option><option>Check</option><option>Other</option></select></label>
+    <label>Business reason<input name="reason" required placeholder="e.g. Needed for installation jobs"></label>
+    <label>Model / serial number (optional)<input name="serial" placeholder="Helpful for warranty and insurance"></label>
+    <div class="preview" id="eqPreview"></div>
+    <label>Notes<textarea name="notes" placeholder="Optional"></textarea></label>
+    <div class="hint">Receipts</div>
+    <label class="check" style="margin:6px 0 2px"><input type="checkbox" name="paperKept"> 📄 Paper receipt kept (stored somewhere safe)</label>
+    <div class="thumbs" data-thumbs></div>
+    <label class="btn small" style="display:inline-flex;margin-bottom:10px">📎 Add photo / file<input type="file" accept="image/*,application/pdf" multiple data-file class="hidden"></label>
+    <div class="dlg-foot">
+      <button type="button" class="btn danger" data-delete>Delete</button>
+      <span class="row"><button type="button" class="btn" data-close>Cancel</button><button type="submit" class="btn primary">Save</button></span>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="viewer"><div style="padding:12px"><div class="dlg-head"><span id="viewerName"></span><button type="button" class="btn small" id="viewerClose">Close</button></div><img id="viewerImg" alt="Receipt"></div></dialog>
+
+<div id="printArea"></div>
+<datalist id="vehicleList"></datalist><datalist id="placeList"></datalist>
+<datalist id="clientList"></datalist><datalist id="vendorList"></datalist>
+
+<script>
+"use strict";
+/* ---------- storage (IndexedDB, in this browser) ---------- */
+const DB_NAME = 'mileage-expense-log';
+let db;
+function openDB(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = () => {
+      const d = r.result;
+      for (const s of ['trips','expenses','receipts']) if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, {keyPath:'id'});
+      if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings', {keyPath:'key'});
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+const wrap = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const store = (s, mode='readonly') => db.transaction(s, mode).objectStore(s);
+const getAll = s => wrap(store(s).getAll());
+const getOne = (s, k) => wrap(store(s).get(k));
+const putOne = (s, v) => wrap(store(s,'readwrite').put(v));
+const delOne = (s, k) => wrap(store(s,'readwrite').delete(k));
+const clearStore = s => wrap(store(s,'readwrite').clear());
+
+const DEFAULT_RATES = [
+  {from:'2020-01-01', rate:0.575},
+  {from:'2021-01-01', rate:0.56},
+  {from:'2022-01-01', rate:0.585},
+  {from:'2022-07-01', rate:0.625},
+  {from:'2023-01-01', rate:0.655},
+  {from:'2024-01-01', rate:0.67},
+  {from:'2025-01-01', rate:0.70},
+  {from:'2026-01-01', rate:0.725},
+  {from:'2026-07-01', rate:0.76},
+];
+
+const state = { trips:[], expenses:[], equipment:[], receiptMeta:new Map(), settings:{ rates:DEFAULT_RATES, lastBackup:null, lastVehicle:'', businesses:[{id:'default', name:'My Business'}], currentBusiness:'default', savedPlaces:[{id:'home', name:'Home', icon:'🏠', address:''}, {id:'work', name:'Work', icon:'🏢', address:''}], activeTrip:null }, year:new Date().getFullYear(), groupBy:'day', rangeFrom:'', rangeTo:'' };
+
+/* ---------- businesses ---------- */
+// Entries made before businesses existed (or from an unknown business) belong to the first business.
+const bizOf = x => { const id = x.businessId || 'default'; const bs = state.settings.businesses; return bs.some(b => b.id === id) ? id : bs[0].id; };
+const curBiz = () => state.settings.businesses.find(b => b.id === state.settings.currentBusiness) || state.settings.businesses[0];
+const bizName = () => curBiz().name;
+const forBiz = list => list.filter(x => bizOf(x) === curBiz().id);
+
+async function saveSetting(key, value){ state.settings[key] = value; await putOne('settings', {key, value}); }
+
+/* ---------- color themes ---------- */
+const THEMES = {
+  classic:  {name:'Classic Blue',
+    light:{bg:'#f5f6f8',card:'#ffffff',text:'#1d2330',muted:'#667085',line:'#e3e6eb',accent:'#1f6feb',accentText:'#ffffff'},
+    dark: {bg:'#12151b',card:'#1b2029',text:'#e7eaf0',muted:'#9aa3b2',line:'#2c3340',accent:'#4c8dff',accentText:'#ffffff'}},
+  ocean:    {name:'Ocean Breeze',
+    light:{bg:'#eaf6f7',card:'#ffffff',text:'#0f2e36',muted:'#55767e',line:'#cfe6e9',accent:'#0b7f8a',accentText:'#ffffff'},
+    dark: {bg:'#0a1b20',card:'#10282e',text:'#dff3f5',muted:'#8fb3b9',line:'#1f3f46',accent:'#2cc5cf',accentText:'#03252a'}},
+  sunset:   {name:'Sunset',
+    light:{bg:'#fff3ec',card:'#ffffff',text:'#3a1f17',muted:'#8a6a5f',line:'#f5dccf',accent:'#d9480f',accentText:'#ffffff'},
+    dark: {bg:'#1e1311',card:'#2b1a16',text:'#fbe9e2',muted:'#c09e93',line:'#47291f',accent:'#ff8a4c',accentText:'#2a0f00'}},
+  forest:   {name:'Forest',
+    light:{bg:'#eff5ec',card:'#ffffff',text:'#1c2b1a',muted:'#5c7058',line:'#d8e5d2',accent:'#2b7a2e',accentText:'#ffffff'},
+    dark: {bg:'#101a0f',card:'#182417',text:'#e5f0e2',muted:'#97ad92',line:'#2b3d28',accent:'#6cc56f',accentText:'#08200a'}},
+  lavender: {name:'Lavender',
+    light:{bg:'#f4f0fb',card:'#ffffff',text:'#271d3b',muted:'#6e6385',line:'#e2daf2',accent:'#6741d9',accentText:'#ffffff'},
+    dark: {bg:'#15111f',card:'#201a2e',text:'#ece6fa',muted:'#a69cc0',line:'#352b4a',accent:'#a68bff',accentText:'#1a0f3d'}},
+  berry:    {name:'Berry Pop',
+    light:{bg:'#fdeef4',card:'#ffffff',text:'#3a1426',muted:'#8a5f72',line:'#f5d5e2',accent:'#c2255c',accentText:'#ffffff'},
+    dark: {bg:'#1d0f15',card:'#2a1620',text:'#fbe4ee',muted:'#c296a8',line:'#472434',accent:'#f06595',accentText:'#2a0614'}},
+  sunshine: {name:'Sunshine',
+    light:{bg:'#fcfbe8',card:'#ffffff',text:'#2b2a12',muted:'#74714c',line:'#ebe9c3',accent:'#a15c07',accentText:'#ffffff'},
+    dark: {bg:'#17170c',card:'#232314',text:'#f4f3d8',muted:'#b3b08a',line:'#3b3a21',accent:'#f2c94c',accentText:'#1f1a00'}},
+  midnight: {name:'Midnight Gold',
+    light:{bg:'#f1f2f6',card:'#ffffff',text:'#141a2e',muted:'#5d6580',line:'#dcdfe9',accent:'#1e2a5a',accentText:'#f4d47c'},
+    dark: {bg:'#0b0f1e',card:'#141a30',text:'#eef0f8',muted:'#9aa1bd',line:'#262e4d',accent:'#e2b34a',accentText:'#1a1405'}},
+};
+const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+function applyTheme(name, mode){
+  const t = THEMES[name] || THEMES.classic;
+  const dark = mode === 'dark' || (mode !== 'light' && darkQuery.matches);
+  const p = t[dark ? 'dark' : 'light'], s = document.documentElement.style;
+  const extra = dark ? {warn:'#f5a524', 'warn-bg':'#3a2a12', danger:'#ff6b6b', good:'#4ade80', shadow:'none'}
+                     : {warn:'#b54708', 'warn-bg':'#fff4e5', danger:'#c62828', good:'#067647', shadow:'0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08)'};
+  const vars = {bg:p.bg, card:p.card, text:p.text, muted:p.muted, line:p.line, accent:p.accent, 'accent-text':p.accentText, ...extra};
+  for (const [k,v] of Object.entries(vars)) s.setProperty('--' + k, v);
+  s.colorScheme = dark ? 'dark' : 'light';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', p.bg);
+  try { localStorage.setItem('mel-theme', JSON.stringify({name, mode})); } catch(e) {}
+}
+// Apply the last-used theme right away so the page doesn't flash.
+try { const t = JSON.parse(localStorage.getItem('mel-theme') || 'null'); if (t) applyTheme(t.name, t.mode); } catch(e) {}
+darkQuery.addEventListener?.('change', () => applyTheme(state.settings.theme, state.settings.mode));
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+const money = n => (n||0).toLocaleString('en-US', {style:'currency', currency:'USD'});
+const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
+const fmtMiles = n => (Math.round(n*10)/10).toLocaleString('en-US') + ' mi';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+const fmtDate = s => { if(!s) return ''; const [y,m,d] = s.split('-'); return `${+m}/${+d}/${y}`; };
+const yearOf = s => +String(s).slice(0,4);
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function rateFor(date){
+  const rates = [...state.settings.rates].sort((a,b) => b.from.localeCompare(a.from));
+  return (rates.find(r => r.from <= date) || rates[rates.length-1] || {rate:0}).rate;
+}
+const tripMiles = t => num(t.miles) * (t.roundTrip ? 2 : 1);
+const tripDeduction = t => Math.round(tripMiles(t) * rateFor(t.date) * 100) / 100;
+const expTotal = e => num(e.amount) + num(e.tip);
+
+function download(blob, name){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+/* ---------- receipts ---------- */
+async function prepareFile(file){
+  if (file.type.startsWith('image/') && file.type !== 'image/gif'){
+    try {
+      const bmp = await createImageBitmap(file, {imageOrientation:'from-image'});
+      const max = 1800, s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(bmp.width*s); c.height = Math.round(bmp.height*s);
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+      if (blob && blob.size < file.size) return {name:file.name.replace(/\.[^.]+$/, '') + '.jpg', type:'image/jpeg', blob};
+    } catch(e) { /* fall back to the original file */ }
+  }
+  return {name:file.name, type:file.type || 'application/octet-stream', blob:file};
+}
+const extOf = (r) => (r.name.match(/\.[a-z0-9]+$/i)?.[0] || (r.type === 'application/pdf' ? '.pdf' : '.jpg')).toLowerCase();
+
+async function viewReceipt(blob, name, type){
+  const url = URL.createObjectURL(blob);
+  if ((type||'').startsWith('image/')){
+    $('#viewerImg').src = url; $('#viewerName').textContent = name; $('#viewer').showModal();
+  } else {
+    window.open(url, '_blank');
+  }
+}
+$('#viewerClose').onclick = () => $('#viewer').close();
+
+/* ---------- receipt reading (runs on this device; the photo is not uploaded) ---------- */
+let ocrWorker = null, ocrProgress = () => {};
+function loadScript(src){
+  return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+}
+// Make the photo easier to read: grayscale, stronger contrast, sensible size.
+async function ocrImage(file){
+  const bmp = await createImageBitmap(file, {imageOrientation:'from-image'});
+  const s = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width*s); c.height = Math.round(bmp.height*s);
+  const g = c.getContext('2d'); g.drawImage(bmp, 0, 0, c.width, c.height);
+  const img = g.getImageData(0, 0, c.width, c.height), d = img.data;
+  for (let i = 0; i < d.length; i += 4){
+    const y = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+    const v = Math.max(0, Math.min(255, (y - 128) * 1.5 + 128));
+    d[i] = d[i+1] = d[i+2] = v;
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+async function readReceiptText(file, onProgress){
+  if (!window.Tesseract) await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
+  ocrProgress = onProgress;
+  if (!ocrWorker) ocrWorker = await Tesseract.createWorker('eng', 1, {
+    logger: m => { if (m.status === 'recognizing text') ocrProgress(Math.round(m.progress * 100)); }
+  });
+  const {data} = await ocrWorker.recognize(await ocrImage(file));
+  return data.text || '';
+}
+const MONTH_NAMES = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+function parseReceipt(text){
+  const lines = text.split(/\r?\n/).map(l => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const amountsIn = l => [...l.matchAll(/\$?\s?(\d{1,5}(?:,\d{3})*[.,]\d{2})(?!\d)/g)].map(m => parseFloat(m[1].replace(/,(?=\d{3})/g,'').replace(',', '.')));
+  const lastAmount = l => { const a = amountsIn(l); return a.length ? a[a.length-1] : null; };
+  const out = {};
+
+  // Total: prefer "grand total / amount due / balance", then "total" (never subtotal or tax lines)
+  const ranks = [/grand\s*total|amount\s*due|balance\s*due|total\s*due|amount\s*paid/i, /\btotal\b/i];
+  for (const re of ranks){
+    const hits = lines.filter(l => re.test(l) && !/sub\s*-?\s*total|tax|savings|discount|items?\b/i.test(l)).map(lastAmount).filter(v => v != null);
+    if (hits.length) { out.total = Math.max(...hits); break; }
+  }
+  if (out.total == null){ const all = lines.flatMap(amountsIn); if (all.length) out.total = Math.max(...all); }
+
+  const tipLine = lines.find(l => /\b(tip|gratuity)\b/i.test(l) && lastAmount(l));
+  if (tipLine) out.tip = lastAmount(tipLine);
+  // The app stores amount and tip separately, so take the tip back out of a total that includes it.
+  out.amount = (out.total != null && out.tip && out.total > out.tip) ? Math.round((out.total - out.tip) * 100) / 100 : out.total;
+
+  // Date: 11/10/2026, 11-10-26, 2026-11-10, Nov 10, 2026, 10 Nov 2026
+  const thisYear = new Date().getFullYear(), iso = (y,m,d) => `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const okDate = (y,m,d) => y >= 2015 && y <= thisYear && m >= 1 && m <= 12 && d >= 1 && d <= 31 && iso(y,m,d) <= today();
+  for (const l of lines){
+    let m, y, mo, d;
+    if ((m = l.match(/\b(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})\b/))) [y,mo,d] = [+m[1],+m[2],+m[3]];
+    else if ((m = l.match(/\b(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})\b/))) { [mo,d,y] = [+m[1],+m[2],+m[3]]; if (y < 100) y += 2000; }
+    else if ((m = l.match(/\b([a-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})\b/i)) && MONTH_NAMES.includes(m[1].toLowerCase())) [mo,d,y] = [MONTH_NAMES.indexOf(m[1].toLowerCase())+1,+m[2],+m[3]];
+    else if ((m = l.match(/\b(\d{1,2})\s+([a-z]{3})[a-z]*\.?,?\s+(\d{4})\b/i)) && MONTH_NAMES.includes(m[2].toLowerCase())) [d,mo,y] = [+m[1],MONTH_NAMES.indexOf(m[2].toLowerCase())+1,+m[3]];
+    if (y && okDate(y,mo,d)) { out.date = iso(y,mo,d); break; }
+  }
+
+  // Store name: first line near the top that looks like a name, not an address/phone/heading
+  const skip = /receipt|welcome|thank|invoice|order|table|server|guest|check|tel|phone|www|\.com|http|store\s*#|^\d|\d{3}[-.\s]\d{3}[-.\s]\d{4}|street|\bst\b|\bave\b|\brd\b|blvd|suite|date|time/i;
+  const name = lines.slice(0, 6).find(l => (l.match(/[a-z]/gi) || []).length >= 3 && !skip.test(l) && !amountsIn(l).length);
+  if (name) out.vendor = name.replace(/[^\w&'’.\- ]/g, '').trim().replace(/\b([A-Z])([A-Z']+)\b/g, (w, a, b) => a + b.toLowerCase());
+
+  const all = text.toLowerCase();
+  if (/visa|mastercard|master card|amex|american express|discover|credit/.test(all)) out.payment = 'Credit card';
+  else if (/debit/.test(all)) out.payment = 'Debit card';
+  else if (/\bcash\b|change due/.test(all)) out.payment = 'Cash';
+
+  // Best guess at the kind of expense
+  const guesses = [
+    ['Meal', /restaurant|grill|cafe|café|coffee|pizza|burger|taco|diner|bistro|kitchen|bar\b|pub\b|bakery|deli|sushi|steak|server|gratuity|tip\b|dine|entree|appetizer|beverage/],
+    ['Parking', /parking|garage|park\s*mobile|parkmobile/],
+    ['Tolls', /\btoll|e-?zpass|sunpass|fastrak/],
+    ['Travel / lodging', /hotel|inn\b|suites|lodging|airline|airport|uber|lyft|rental car/],
+    ['Phone / internet', /verizon|at&t|t-mobile|comcast|xfinity|spectrum|wireless/],
+    ['Supplies', /office depot|officemax|staples|supplies|paper|ink\b|toner/],
+  ];
+  const g = guesses.find(([, re]) => re.test(all));
+  if (g) out.category = g[0];
+  return out;
+}
+
+/* ---------- entry dialogs (shared logic) ---------- */
+function makeEditor(kind){
+  const dlg = $({trip:'#tripDlg', expense:'#expDlg', equipment:'#eqDlg'}[kind]);
+  const form = dlg.querySelector('form');
+  const thumbs = form.querySelector('[data-thumbs]');
+  const fileInput = form.querySelector('[data-file]');
+  let current = null;      // entry being edited (null = new)
+  let receipts = [];       // [{id, name, type, blob, isNew}]
+  let removed = [];        // ids of existing receipts removed
+
+  function drawThumbs(){
+    thumbs.innerHTML = '';
+    if (!receipts.length) { thumbs.innerHTML = '<span class="hint">No receipts attached yet.</span>'; return; }
+    receipts.forEach((r, i) => {
+      const d = document.createElement('div'); d.className = 'thumb'; d.title = r.name;
+      if (r.type.startsWith('image/')) { const img = document.createElement('img'); img.src = URL.createObjectURL(r.blob); d.appendChild(img); }
+      else d.textContent = r.type === 'application/pdf' ? 'PDF' : r.name;
+      d.onclick = () => viewReceipt(r.blob, r.name, r.type);
+      const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '×'; x.title = 'Remove';
+      x.onclick = (ev) => { ev.stopPropagation(); if (!r.isNew) removed.push(r.id); receipts.splice(i,1); drawThumbs(); };
+      d.appendChild(x); thumbs.appendChild(d);
+    });
+  }
+  fileInput.onchange = async () => {
+    for (const f of fileInput.files) { const p = await prepareFile(f); receipts.push({id:uid(), ...p, isNew:true}); }
+    fileInput.value = ''; drawThumbs();
+  };
+
+  // Scan receipt: attach the photo, read its text on this device, and fill in empty fields.
+  const scanInput = form.querySelector('[data-scan]');
+  if (scanInput) scanInput.onchange = async () => {
+    const file = scanInput.files[0]; scanInput.value = '';
+    if (!file) return;
+    const status = form.querySelector('[data-scan-status]'), label = scanInput.parentElement;
+    const p = await prepareFile(file);
+    receipts.push({id:uid(), ...p, isNew:true}); drawThumbs();
+    label.classList.add('busy');
+    try {
+      status.textContent = 'Reading receipt…';
+      const text = await readReceiptText(file, pct => { status.textContent = `Reading receipt… ${pct}%`; });
+      const r = parseReceipt(text);
+      const filled = [];
+      const setIf = (name, value, labelText, shown) => {
+        if (value == null || value === '' || !form[name]) return;
+        const el = form[name];
+        const isDefault = name === 'date' ? el.value === defaultDate() : name === 'category' ? (!current && el.value === 'Meal') : !el.value;
+        if (!isDefault) return;                       // never overwrite something the person typed
+        el.value = value; filled.push(`${labelText} ${shown ?? value}`);
+      };
+      const amt = kind === 'expense' ? r.amount : r.total;
+      setIf('amount', amt?.toFixed(2), kind === 'expense' && r.tip ? 'Amount' : 'Total', amt != null ? money(amt) : null);
+      if (kind === 'expense') setIf('tip', r.tip?.toFixed(2), 'Tip', r.tip != null ? money(r.tip) : null);
+      setIf('date', r.date, 'Date', r.date ? fmtDate(r.date) : null);
+      setIf('vendor', r.vendor, 'Place');
+      setIf('payment', r.payment, 'Paid by');
+      if (kind === 'expense' && r.category) setIf('category', r.category, 'Type');
+      refresh();
+      status.textContent = filled.length ? `Filled in: ${filled.join(' · ')}. Please check these.`
+                                         : `Couldn't read the details clearly. The photo is attached, so please type them in.`;
+    } catch (e) {
+      status.textContent = 'Could not read the receipt (the reader needs an internet connection the first time). The photo is attached; please type the details.';
+    } finally { label.classList.remove('busy'); }
+  };
+
+  // Trip form: list the meals/expenses linked to this trip. Expense form: show which trip it belongs to.
+  function drawLinks(){
+    if (kind === 'trip'){
+      const linked = current ? state.expenses.filter(e => e.tripId === current.id).sort((a,b) => a.date.localeCompare(b.date)) : [];
+      const box = form.querySelector('[data-linked-list]');
+      box.innerHTML = linked.length ? linked.map(e => `<div class="linked-row" data-id="${e.id}"><span>${esc(e.vendor || e.category)} · ${esc(e.category)}</span><b>${money(expTotal(e))}</b></div>`).join('')
+                                    : '<div class="hint">None yet.</div>';
+      box.querySelectorAll('.linked-row').forEach(r => r.onclick = () => { dlg.close(); expEditor.open(state.expenses.find(e => e.id === r.dataset.id)); });
+    } else if (kind === 'expense') {
+      const t = state.trips.find(x => x.id === form.tripId.value);
+      form.querySelector('[data-trip-note]').classList.toggle('hidden', !t);
+      if (t) form.querySelector('[data-trip-text]').textContent = `🚗 Linked to trip: ${t.purpose || 'Trip'} (${fmtDate(t.date)}${t.to ? ', to ' + t.to : ''})`;
+    }
+  }
+  async function open(entry, prefill){
+    current = entry || null; removed = []; receipts = [];
+    if (kind === 'trip') gpsPending = false;
+    form.reset();
+    if (kind === 'trip') $('#calcStatus').textContent = 'Use a street address, or a business name plus city and state.';
+    dlg.querySelector('h2').textContent = (entry ? 'Edit ' : 'Add ') + {trip:'trip', expense:'meal / expense', equipment:'tool / equipment'}[kind];
+    form.querySelector('[data-delete]').classList.toggle('hidden', !entry);
+    const defaults = {trip:{date:defaultDate(), vehicle:state.settings.lastVehicle}, expense:{date:defaultDate(), category:'Meal'}, equipment:{date:defaultDate(), category:'Tools', bizPct:100}}[kind];
+    const data = entry || {...defaults, ...prefill};
+    for (const el of form.elements) {
+      if (!el.name) continue;
+      if (el.type === 'checkbox') el.checked = !!data[el.name];
+      else el.value = data[el.name] ?? '';
+    }
+    for (const id of (entry?.receipts || [])) { const r = await getOne('receipts', id); if (r) receipts.push({...r, isNew:false}); }
+    if (kind === 'trip') { renderStops(data.stops); renderPlaceChips(); addrTarget = null; form.querySelectorAll('.addr-target').forEach(x => x.classList.remove('addr-target')); }
+    const st = form.querySelector('[data-scan-status]'); if (st) st.textContent = 'Take or choose a photo of the receipt and the app fills in what it can read. Always check the numbers.';
+    drawThumbs(); drawLinks(); refresh(); dlg.showModal();
+  }
+  function values(){
+    const v = {};
+    for (const el of form.elements) if (el.name) v[el.name] = el.type === 'checkbox' ? el.checked : el.value.trim();
+    if (kind === 'trip') v.stops = getStops();
+    return v;
+  }
+  function refresh(){
+    const v = values();
+    if (kind === 'trip'){
+      const total = num(v.miles) * (v.roundTrip ? 2 : 1), rate = rateFor(v.date || today());
+      $('#tripPreview').textContent = `Total ${fmtMiles(total)} × $${rate.toFixed(3).replace(/0$/,'')} = ${money(total*rate)} deduction`;
+    } else if (kind === 'equipment') {
+      const pct = v.bizPct === '' ? 100 : num(v.bizPct);
+      $('#eqPreview').textContent = `Business portion: ${money(num(v.amount) * pct / 100)} (${pct}% of ${money(num(v.amount))})`;
+    } else {
+      const isMeal = v.category === 'Meal';
+      form.querySelectorAll('[data-meal]').forEach(el => el.classList.toggle('hidden', !isMeal));
+      $('#expPreview').textContent = `Total ${money(num(v.amount) + (isMeal ? num(v.tip) : 0))}` + (isMeal ? ' (meals are usually 50% deductible)' : '');
+    }
+  }
+  form.addEventListener('input', (ev) => {
+    if (kind === 'trip' && (ev.target.name === 'odoStart' || ev.target.name === 'odoEnd')){
+      const s = num(form.odoStart.value), e = num(form.odoEnd.value);
+      if (form.odoStart.value && form.odoEnd.value && e > s) form.miles.value = Math.round((e - s)*10)/10;
+    }
+    refresh();
+  });
+  form.querySelectorAll('[data-close]').forEach(b => b.onclick = () => dlg.close());
+  form.querySelector('[data-delete]').onclick = async () => {
+    if (!current || !confirm('Delete this entry and its receipts? This cannot be undone.')) return;
+    for (const id of current.receipts || []) await delOne('receipts', id);
+    await delOne(kind === 'trip' ? 'trips' : 'expenses', current.id);
+    dlg.close(); await reload();
+  };
+  form.onsubmit = async (ev) => { ev.preventDefault(); await save(); dlg.close(); await reload(); };
+  if (kind === 'trip') form.querySelector('[data-add-linked]').onclick = async () => {
+    if (!form.reportValidity()) return;   // trip needs its required fields first
+    const trip = await save(); dlg.close(); await reload();
+    expEditor.open(null, {date:trip.date, tripId:trip.id, reason:trip.purpose + (trip.client ? ` – ${trip.client}` : '')});
+  };
+  if (kind === 'expense') form.querySelector('[data-unlink]').onclick = () => { form.tripId.value = ''; drawLinks(); };
+  async function save(){
+    const v = values();
+    if (kind === 'expense' && v.category !== 'Meal') { v.tip = ''; v.attendees = ''; }
+    if (kind === 'equipment') v.kind = 'equipment';
+    for (const r of receipts.filter(r => r.isNew)) { const {isNew, ...rec} = r; await putOne('receipts', {...rec, created:new Date().toISOString()}); }
+    for (const id of removed) await delOne('receipts', id);
+    const entry = {...(current || {id:uid(), created:new Date().toISOString(), businessId:curBiz().id}), ...v, receipts:receipts.map(r => r.id), updated:new Date().toISOString()};
+    await putOne(kind === 'trip' ? 'trips' : 'expenses', entry);
+    if (kind === 'trip' && gpsPending) { gpsPending = false; await saveSetting('activeTrip', null); }
+    if (kind === 'trip' && v.vehicle) await saveSetting('lastVehicle', v.vehicle);
+    if (yearOf(entry.date) !== state.year) state.year = yearOf(entry.date);
+    current = entry;
+    return entry;
+  }
+  return {open};
+}
+// New entries always start on today's date; change it in the form for any other day.
+function defaultDate(){ return today(); }
+const tripEditor = makeEditor('trip');
+
+/* ---------- driving distance lookup (free OpenStreetMap services, no account needed) ---------- */
+const placeCache = new Map();   // address text → {lat, lon}, so known places aren't looked up twice
+const cacheKey = s => String(s || '').trim().toLowerCase();
+async function findPlace(q){
+  const hit = placeCache.get(cacheKey(q));
+  if (hit) return {...hit, label:q};
+  const sp = state.settings.savedPlaces.find(p => cacheKey(p.address) === cacheKey(q) && p.lat != null);
+  if (sp) return {lat:sp.lat, lon:sp.lon, label:q};
+  const res = await lookupPlace(q);
+  if (res) placeCache.set(cacheKey(q), {lat:res.lat, lon:res.lon});
+  return res;
+}
+async function lookupPlace(q){
+  try {
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=us&q=' + encodeURIComponent(q));
+    const hit = r.ok && (await r.json())[0];
+    if (hit) return {lat:+hit.lat, lon:+hit.lon, label:hit.display_name.split(',').slice(0,3).join(',')};
+  } catch(e) { /* try the backup service */ }
+  const r = await fetch('https://photon.komoot.io/api/?limit=1&q=' + encodeURIComponent(q));
+  const f = r.ok && (await r.json()).features?.[0];
+  if (!f) return null;
+  const p = f.properties || {};
+  return {lat:f.geometry.coordinates[1], lon:f.geometry.coordinates[0], label:[p.name, p.city, p.state].filter(Boolean).join(', ')};
+}
+// Driving miles along a list of points (start, stops…, end).
+async function routeMiles(points){
+  const coords = points.map(p => `${p.lon},${p.lat}`).join(';');
+  const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`);
+  const route = r.ok && (await r.json()).routes?.[0];
+  return route ? Math.round(route.distance / 1609.344 * 10) / 10 : null;
+}
+$('#calcMiles').onclick = async () => {
+  const form = $('#tripForm'), status = $('#calcStatus'), btn = $('#calcMiles');
+  const addrs = [form.from.value.trim(), ...getStops(), form.to.value.trim()];
+  if (!addrs[0] || !addrs[addrs.length-1]) { status.textContent = 'Fill in both From and To first.'; return; }
+  btn.disabled = true; status.textContent = 'Looking up the driving distance…';
+  try {
+    const pts = [];
+    for (const a of addrs.filter(Boolean)){
+      const p = await findPlace(a);
+      if (!p) { status.textContent = `Couldn't find “${a}”. Try adding the street address or city and state.`; return; }
+      pts.push(p);
+    }
+    const miles = await routeMiles(pts);
+    if (miles == null) { status.textContent = 'No driving route found between those places.'; return; }
+    form.miles.value = miles;
+    form.miles.dispatchEvent(new Event('input', {bubbles:true}));
+    status.textContent = `One way: ${pts.map(p => p.label).join(' → ')}. Check these are the right places.`;
+  } catch(e) {
+    status.textContent = 'Could not reach the map service. Check your internet connection, or type the miles yourself.';
+  } finally { btn.disabled = false; }
+};
+
+/* ---------- stops within a trip ---------- */
+function getStops(){ return [...document.querySelectorAll('#stopsBox input')].map(i => i.value.trim()).filter(Boolean); }
+function renderStops(stops){
+  const box = $('#stopsBox'); box.innerHTML = '';
+  (stops || []).forEach(s => addStopRow(s));
+}
+function addStopRow(value = ''){
+  const box = $('#stopsBox'), n = box.children.length + 1;
+  const row = document.createElement('div'); row.className = 'stop-row';
+  row.innerHTML = `<label>Stop ${n}<input list="placeList" placeholder="Address of this stop" data-addr></label><button type="button" class="btn small" title="Remove this stop">✕</button>`;
+  row.querySelector('input').value = value;
+  row.querySelector('button').onclick = () => { row.remove(); [...box.children].forEach((r, i) => r.querySelector('label').firstChild.textContent = `Stop ${i+1}`); };
+  box.appendChild(row);
+  return row.querySelector('input');
+}
+$('#addStop').onclick = () => { const i = addStopRow(); i.focus(); };
+
+/* ---------- saved places (Home, Work, …) ---------- */
+let addrTarget = null;   // the From / stop / To box that a saved place fills
+$('#tripForm').addEventListener('focusin', e => {
+  if (!e.target.matches('[data-addr]')) return;
+  document.querySelectorAll('#tripForm .addr-target').forEach(x => x.classList.remove('addr-target'));
+  addrTarget = e.target; addrTarget.classList.add('addr-target');
+});
+function renderPlaceChips(){
+  const places = state.settings.savedPlaces.filter(p => p.address);
+  $('#placeChips').innerHTML = places.length
+    ? '<span class="hint">Tap to fill the highlighted box:</span>' + places.map(p => `<button type="button" class="chip" data-place="${p.id}">${p.icon || '📍'} ${esc(p.name)}</button>`).join('')
+    : '<span class="hint">Tip: add your home and work addresses under Settings → Saved places to fill them with one tap.</span>';
+  $('#placeChips').querySelectorAll('[data-place]').forEach(b => b.onmousedown = e => e.preventDefault());   // keep the box highlighted
+  $('#placeChips').querySelectorAll('[data-place]').forEach(b => b.onclick = () => {
+    const p = state.settings.savedPlaces.find(x => x.id === b.dataset.place), f = $('#tripForm');
+    const target = (addrTarget && f.contains(addrTarget)) ? addrTarget
+      : [f.from, ...document.querySelectorAll('#stopsBox input'), f.to].find(i => !i.value) || f.to;
+    target.value = p.address;
+    target.dispatchEvent(new Event('input', {bubbles:true}));
+  });
+}
+function renderPlaces(){
+  const places = state.settings.savedPlaces;
+  $('#placesList').innerHTML = places.map(p => `
+    <div class="place-row" data-id="${p.id}">
+      <input value="${esc(p.name)}" data-pname aria-label="Place name" ${p.id === 'home' || p.id === 'work' ? 'readonly' : ''}>
+      <input value="${esc(p.address)}" data-paddr list="placeList" placeholder="Street address, city, state" aria-label="Address">
+      ${p.id === 'home' || p.id === 'work' ? '<span></span>' : '<button class="btn small danger" data-pdel>Remove</button>'}
+      <div class="hint" data-pstatus>${p.address ? (p.lat != null ? '✓ Found on the map' : '') : ''}</div>
+    </div>`).join('');
+  $('#placesList').querySelectorAll('.place-row').forEach(row => {
+    const id = row.dataset.id;
+    const update = async (patch) => { await saveSetting('savedPlaces', state.settings.savedPlaces.map(p => p.id === id ? {...p, ...patch} : p)); };
+    row.querySelector('[data-pname]').onchange = e => update({name:e.target.value.trim() || 'Place'});
+    row.querySelector('[data-paddr]').onchange = async e => {
+      const address = e.target.value.trim(), st = row.querySelector('[data-pstatus]');
+      await update({address, lat:null, lon:null});
+      if (!address) { st.textContent = ''; return; }
+      st.textContent = 'Checking the address…';
+      try {
+        const hit = await lookupPlace(address);
+        if (hit) { await update({lat:hit.lat, lon:hit.lon}); st.textContent = `✓ Found: ${hit.label}`; }
+        else st.textContent = "Couldn't find that address on the map. It will still fill in, but miles may not calculate.";
+      } catch { st.textContent = 'Saved. (Could not check the address while offline.)'; }
+    };
+    row.querySelector('[data-pdel]')?.addEventListener('click', async () => {
+      await saveSetting('savedPlaces', state.settings.savedPlaces.filter(p => p.id !== id)); renderPlaces();
+    });
+  });
+}
+$('#addPlace').onclick = async () => {
+  await saveSetting('savedPlaces', [...state.settings.savedPlaces, {id:uid(), name:'New place', icon:'📍', address:''}]);
+  renderPlaces(); const rows = $('#placesList').querySelectorAll('[data-pname]'); rows[rows.length-1].select();
+};
+
+/* ---------- GPS trips: Start → (stops) → End ---------- */
+function getPosition(){
+  return new Promise((res, rej) => {
+    if (!navigator.geolocation) return rej(new Error('This device does not offer location.'));
+    navigator.geolocation.getCurrentPosition(p => res({lat:p.coords.latitude, lon:p.coords.longitude}),
+      err => rej(new Error(err.code === 1 ? 'Location permission was turned off for this app. Allow location in your browser or phone settings.' : 'Could not get your location. Try again outside or with a clearer sky view.')),
+      {enableHighAccuracy:true, timeout:20000, maximumAge:0});
+  });
+}
+const metersBetween = (a, b) => { const R = 6371000, r = x => x*Math.PI/180, dLat = r(b.lat-a.lat), dLon = r(b.lon-a.lon);
+  const h = Math.sin(dLat/2)**2 + Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(h)); };
+// Turn a GPS position into an address (or a saved place's address when you're at one).
+async function describePosition(pos){
+  const near = state.settings.savedPlaces.find(p => p.lat != null && p.address && metersBetween(pos, p) < 200);
+  if (near) return {...pos, label:near.address, place:near.name};
+  let label = '';
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.lat}&lon=${pos.lon}`);
+    const a = r.ok ? (await r.json()).address || {} : {};
+    const street = [a.house_number, a.road].filter(Boolean).join(' ');
+    label = [street || a.amenity || a.shop || a.neighbourhood, a.city || a.town || a.village || a.hamlet, a.state].filter(Boolean).join(', ');
+  } catch(e) {}
+  if (!label) label = `${pos.lat.toFixed(5)}, ${pos.lon.toFixed(5)}`;
+  placeCache.set(cacheKey(label), {lat:pos.lat, lon:pos.lon});
+  return {...pos, label};
+}
+async function gpsStep(btn, work){
+  const old = btn.textContent; btn.disabled = true; btn.textContent = 'Getting your location…';
+  try { await work(); } catch(e) { alert(e.message || 'Something went wrong getting your location.'); }
+  finally { btn.disabled = false; btn.textContent = old; }
+}
+function renderGps(){
+  const t = state.settings.activeTrip, box = $('#gpsBox');
+  $('#gpsStart').classList.toggle('hidden', !!t);
+  box.classList.toggle('hidden', !t);
+  if (!t) return;
+  const time = s => new Date(s).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+  box.innerHTML = `<div class="t">🚗 Trip in progress — started ${time(t.points[0].at)}</div>
+    <ol>${t.points.map((p, i) => `<li>${i === 0 ? 'Start' : 'Stop'}: ${esc(p.place ? `${p.place} (${p.label})` : p.label)} · ${time(p.at)}</li>`).join('')}</ol>
+    <div class="row"><button class="btn primary" id="gpsEnd">🏁 End trip here</button><button class="btn" id="gpsStop">📍 Add a stop here</button><button class="btn danger" id="gpsCancel">Cancel trip</button></div>
+    <div class="hint" style="margin-top:6px">You can close the app while driving. Open it again when you arrive.</div>`;
+  $('#gpsStop').onclick = e => gpsStep(e.target, async () => {
+    const p = await describePosition(await getPosition());
+    await saveSetting('activeTrip', {...t, points:[...t.points, {...p, at:new Date().toISOString()}]}); renderGps();
+  });
+  $('#gpsEnd').onclick = e => gpsStep(e.target, async () => {
+    const end = await describePosition(await getPosition());
+    const pts = [...t.points, end];
+    let miles = null; try { miles = await routeMiles(pts); } catch(err) {}
+    tripEditor.open(null, {date:isoOf(new Date(t.points[0].at)),
+      from:t.points[0].label, stops:t.points.slice(1).map(p => p.label), to:end.label, miles:miles ?? ''});
+    gpsPending = true;   // after open(), which resets it
+    $('#calcStatus').textContent = miles != null ? `GPS trip: ${miles} miles driving distance through ${pts.length - 2} stop(s). Add the business purpose and save.` : 'Could not work out the miles (no internet?). Use Calculate miles when you are back online.';
+  });
+  $('#gpsCancel').onclick = async () => { if (confirm('Cancel this trip in progress? Nothing will be saved.')) { await saveSetting('activeTrip', null); renderGps(); } };
+}
+let gpsPending = false;   // set when the trip form was opened by End trip; cleared once saved
+$('#gpsStart').onclick = e => gpsStep(e.target, async () => {
+  const p = await describePosition(await getPosition());
+  await saveSetting('activeTrip', {businessId:curBiz().id, points:[{...p, at:new Date().toISOString()}]}); renderGps();
+});
+const expEditor = makeEditor('expense');
+const eqEditor = makeEditor('equipment');
+$('#addTrip').onclick = () => tripEditor.open();
+$('#addExp').onclick = () => expEditor.open();
+$('#addEq').onclick = () => eqEditor.open();
+
+// A 🗑 button on every list entry, so it can be deleted without opening it.
+function addDeleteButtons(listSel, store, all, nameOf){
+  document.querySelectorAll(listSel + ' .item').forEach(el => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'del'; b.textContent = '🗑'; b.title = 'Delete'; b.setAttribute('aria-label', 'Delete this entry');
+    b.onclick = async (ev) => {
+      ev.stopPropagation();
+      const entry = all.find(x => x.id === el.dataset.id);
+      if (!entry || !confirm(`Delete "${nameOf(entry)}" (${fmtDate(entry.date)}) and its receipts?\n\nThis cannot be undone.`)) return;
+      for (const id of entry.receipts || []) await delOne('receipts', id);
+      await delOne(store, entry.id);
+      await reload();
+    };
+    el.appendChild(b);
+  });
+}
+
+/* ---------- tools & equipment ---------- */
+const eqPct = e => (e.bizPct === '' || e.bizPct == null) ? 100 : num(e.bizPct);
+const eqBiz = e => Math.round(num(e.amount) * eqPct(e)) / 100;     // business portion of the cost
+function renderEquipment(){
+  const q = $('#eqSearch').value.toLowerCase();
+  const list = inYear(state.equipment).filter(e => !q || [e.item,e.vendor,e.category,e.reason,e.serial,e.payment,e.notes].join(' ').toLowerCase().includes(q));
+  $('#eqList').innerHTML = list.length ? groupedList(list, e => `
+    <div class="item" data-id="${e.id}">
+      <div><div class="t">${esc(e.item || e.category)}</div>
+      <div class="m">${fmtDate(e.date)} · ${esc(e.category)}${e.vendor ? ' · ' + esc(e.vendor) : ''} · ${esc(e.reason)}</div>
+      ${receiptBadges(e)}${eqPct(e) < 100 ? ` <span class="badge">${eqPct(e)}% business use</span>` : ''}</div>
+      <div class="amt">${money(eqBiz(e))}${eqPct(e) < 100 ? `<div class="m">of ${money(num(e.amount))}</div>` : (e.payment ? `<div class="m">${esc(e.payment)}</div>` : '')}</div>
+    </div>`, es => money(es.reduce((s,e)=>s+eqBiz(e),0))) : `<div class="empty">${q ? 'Nothing matches your search.' : `No tools or equipment logged for ${state.year} yet. Tap “+ Add tool / equipment” to log a purchase.`}</div>`;
+  $('#eqList').querySelectorAll('.item').forEach(el => el.onclick = () => eqEditor.open(state.equipment.find(e => e.id === el.dataset.id)));
+  addDeleteButtons('#eqList', 'expenses', state.equipment, e => e.item || e.category);
+}
+$('#eqSearch').oninput = renderEquipment;
+function equipmentCsv(plan){
+  const rows = [['Purchase date','Type','Item','Store / vendor','Cost ($)','Business use (%)','Business portion ($)','Payment method','Business reason','Model / serial','Paper receipt kept','Notes','Receipt files']];
+  inYear(state.equipment).slice().reverse().forEach(e => rows.push([e.date,e.category,e.item,e.vendor,num(e.amount).toFixed(2),eqPct(e),eqBiz(e).toFixed(2),
+    e.payment,e.reason,e.serial,e.paperKept?'Yes':'No',e.notes,plan.filter(p=>p.entryId===e.id).map(p=>p.path).join('; ')]));
+  const eqs = inYear(state.equipment);
+  rows.push([], ['TOTAL','','','',eqs.reduce((s,e)=>s+num(e.amount),0).toFixed(2),'',eqs.reduce((s,e)=>s+eqBiz(e),0).toFixed(2)]);
+  return toCsv(rows);
+}
+
+/* ---------- rendering ---------- */
+const inYear = list => forBiz(list).filter(x => yearOf(x.date) === state.year).sort((a,b) => b.date.localeCompare(a.date) || (b.created||'').localeCompare(a.created||''));
+
+function renderYears(){
+  const thisYear = new Date().getFullYear();
+  const years = new Set([state.year]);
+  for (let y = thisYear; y >= 2020; y--) years.add(y);   // past years are always available
+  [...state.trips, ...state.expenses, ...state.equipment].forEach(x => x.date && years.add(yearOf(x.date)));
+  const sel = $('#year');
+  sel.innerHTML = [...years].sort((a,b) => b-a).map(y => `<option ${y===state.year?'selected':''}>${y}</option>`).join('');
+}
+
+function renderSummary(){
+  const trips = inYear(state.trips), exps = inYear(state.expenses);
+  const miles = trips.reduce((s,t) => s + tripMiles(t), 0);
+  const ded = trips.reduce((s,t) => s + tripDeduction(t), 0);
+  const meals = exps.filter(e => e.category === 'Meal').reduce((s,e) => s + expTotal(e), 0);
+  const other = exps.filter(e => e.category !== 'Meal').reduce((s,e) => s + expTotal(e), 0);
+  const eqs = inYear(state.equipment), equip = eqs.reduce((s,e) => s + eqBiz(e), 0);
+  const missing = [...exps, ...eqs].filter(e => !(e.receipts||[]).length && !e.paperKept).length;
+  $('#stats').innerHTML = `
+    <div class="stat"><div class="k">Business miles</div><div class="v">${fmtMiles(miles)}</div><div class="s">${trips.length} trip${trips.length===1?'':'s'}</div></div>
+    <div class="stat"><div class="k">Mileage deduction</div><div class="v">${money(ded)}</div><div class="s">at IRS standard rate(s)</div></div>
+    <div class="stat"><div class="k">Business meals</div><div class="v">${money(meals)}</div><div class="s">≈ ${money(meals/2)} if 50% deductible</div></div>
+    <div class="stat"><div class="k">Other expenses</div><div class="v">${money(other)}</div><div class="s">${missing ? `<span style="color:var(--warn)">${missing} item${missing===1?'':'s'} without a receipt</span>` : 'All expenses have receipts'}</div></div>
+    <div class="stat"><div class="k">Tools &amp; equipment</div><div class="v">${money(equip)}</div><div class="s">${eqs.length} purchase${eqs.length===1?'':'s'} · business portion</div></div>`;
+
+  const cats = {};
+  exps.forEach(e => { cats[e.category] = (cats[e.category]||0) + expTotal(e); });
+  if (eqs.length) cats['Tools & equipment'] = equip;
+  $('#catTable').innerHTML = Object.keys(cats).length
+    ? '<tr><th>Type</th><th class="num">Total</th></tr>' + Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([k,v]) => `<tr><td>${esc(k)}</td><td class="num">${money(v)}</td></tr>`).join('')
+    : '<tr><td class="hint">No expenses this year yet.</td></tr>';
+
+  const veh = {};
+  trips.forEach(t => { const k = t.vehicle || '(not specified)'; veh[k] = (veh[k]||0) + tripMiles(t); });
+  $('#vehTable').innerHTML = Object.keys(veh).length
+    ? '<tr><th>Vehicle</th><th class="num">Miles</th></tr>' + Object.entries(veh).map(([k,v]) => `<tr><td>${esc(k)}</td><td class="num">${fmtMiles(v)}</td></tr>`).join('')
+    : '<tr><td class="hint">No trips this year yet.</td></tr>';
+
+  document.querySelectorAll('#groupBtns button').forEach(b => b.classList.toggle('active', b.dataset.group === state.groupBy));
+  $('#groupLabel').textContent = state.groupBy;
+  $('#monthTable').innerHTML = breakdownTable(trips, [...exps, ...eqs], true)
+    || `<tr><td class="hint">${state.rangeFrom || state.rangeTo ? 'Nothing logged between those dates.' : 'Nothing logged for this year yet. Use the Trips or Meals &amp; Expenses tab to add entries.'}</td></tr>`;
+
+  const lb = state.settings.lastBackup, hasData = state.trips.length + state.expenses.length > 0;
+  const stale = !lb || (Date.now() - new Date(lb).getTime()) > 30*864e5;
+  const n = $('#backupNotice');
+  n.classList.toggle('hidden', !(hasData && stale));
+  n.innerHTML = lb ? `Your last backup was ${new Date(lb).toLocaleDateString()}. Consider downloading a fresh one (Settings &amp; Backup tab).`
+                   : `Your log is stored only in this browser. Download a backup from the Settings &amp; Backup tab to keep it safe.`;
+}
+
+/* ---------- grouping by day / week / month ---------- */
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const parseDate = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const isoOf = dt => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+const dayLabel = s => { const dt = parseDate(s); return `${DAYS[dt.getDay()]}, ${MONTHS[dt.getMonth()]} ${dt.getDate()}, ${dt.getFullYear()}`; };
+function groupKey(date, mode){
+  if (mode === 'month') return date.slice(0,7);
+  if (mode === 'week') { const dt = parseDate(date); dt.setDate(dt.getDate() - (dt.getDay()+6)%7); return isoOf(dt); }  // Monday
+  return date;
+}
+function groupLabel(key, mode){
+  if (mode === 'month') { const [y,m] = key.split('-'); return `${MONTHS[+m-1]} ${y}`; }
+  if (mode === 'week') { const dt = parseDate(key); return `Week of ${MONTHS[dt.getMonth()]} ${dt.getDate()}, ${dt.getFullYear()}`; }
+  const dt = parseDate(key); return `${DAYS[dt.getDay()]} ${dt.getMonth()+1}/${dt.getDate()}/${dt.getFullYear()}`;
+}
+const inRange = x => (!state.rangeFrom || x.date >= state.rangeFrom) && (!state.rangeTo || x.date <= state.rangeTo);
+// Returns table rows (HTML) for the current grouping, or '' when nothing matches.
+function breakdownTable(trips, exps, withTotal){
+  const mode = state.groupBy, g = {};
+  const slot = d => g[groupKey(d, mode)] ||= {miles:0, ded:0, meals:0, other:0, equip:0, n:0};
+  trips.filter(inRange).forEach(t => { const r = slot(t.date); r.miles += tripMiles(t); r.ded += tripDeduction(t); r.n++; });
+  exps.filter(inRange).forEach(e => { const r = slot(e.date); if (e.kind === 'equipment') r.equip += eqBiz(e); else if (e.category === 'Meal') r.meals += expTotal(e); else r.other += expTotal(e); r.n++; });
+  const keys = Object.keys(g).sort();
+  if (!keys.length) return '';
+  const tot = keys.reduce((a,k) => ({miles:a.miles+g[k].miles, ded:a.ded+g[k].ded, meals:a.meals+g[k].meals, other:a.other+g[k].other, equip:a.equip+g[k].equip}), {miles:0,ded:0,meals:0,other:0,equip:0});
+  const sum = r => r.ded + r.meals + r.other + r.equip;
+  const head = {day:'Date', week:'Week', month:'Month'}[mode];
+  return `<thead><tr><th>${head}</th><th class="num">Entries</th><th class="num">Miles</th><th class="num">Mileage $</th><th class="num">Meals</th><th class="num">Other</th><th class="num">Tools/equip</th><th class="num">Total $</th></tr></thead><tbody>` +
+    keys.map(k => { const r = g[k]; return `<tr><td>${groupLabel(k, mode)}</td><td class="num">${r.n}</td><td class="num">${fmtMiles(r.miles)}</td><td class="num">${money(r.ded)}</td><td class="num">${money(r.meals)}</td><td class="num">${money(r.other)}</td><td class="num">${money(r.equip)}</td><td class="num"><b>${money(sum(r))}</b></td></tr>`; }).join('') +
+    `</tbody>` + (withTotal ? `<tfoot><tr><td><b>Total</b></td><td></td><td class="num"><b>${fmtMiles(tot.miles)}</b></td><td class="num"><b>${money(tot.ded)}</b></td><td class="num"><b>${money(tot.meals)}</b></td><td class="num"><b>${money(tot.other)}</b></td><td class="num"><b>${money(tot.equip)}</b></td><td class="num"><b>${money(sum(tot))}</b></td></tr></tfoot>` : '');
+}
+// Lists on the Trips / Expenses tabs: a date header with that day's totals, then its entries.
+function groupedList(list, itemHtml, dayTotal){
+  const byDay = {};
+  list.forEach(x => (byDay[x.date] ||= []).push(x));
+  return Object.keys(byDay).sort().reverse().map(d => `
+    <div class="day-head"><span>${dayLabel(d)}</span><span>${dayTotal(byDay[d])}</span></div>
+    ${byDay[d].map(itemHtml).join('')}`).join('');
+}
+
+// Links between trips and the meals/expenses that belong to them
+const linkedExps = t => state.expenses.filter(e => e.tripId === t.id);
+const linkedTrip = e => e.tripId ? state.trips.find(t => t.id === e.tripId) : null;
+function tripLinkBadge(t){
+  const ex = linkedExps(t);
+  return ex.length ? ` <span class="badge">🍽 ${ex.length} expense${ex.length===1?'':'s'} · ${money(ex.reduce((s,e)=>s+expTotal(e),0))}</span>` : '';
+}
+function expLinkBadge(e){
+  const t = linkedTrip(e);
+  return t ? ` <span class="badge">🚗 ${esc(t.purpose || 'Trip')}${t.to ? ' → ' + esc(t.to) : ''}</span>` : '';
+}
+function linkedTripText(e){
+  const t = linkedTrip(e);
+  return t ? `${t.date} ${t.purpose || 'Trip'}${t.to ? ' to ' + t.to : ''}` : '';
+}
+
+function receiptBadge(e){
+  const n = (e.receipts||[]).length;
+  return n ? `<span class="badge">📎 ${n} receipt${n===1?'':'s'}</span>` : '';
+}
+// Photo badge, paper badge, or a warning when neither is on file.
+function receiptBadges(e){
+  const paper = e.paperKept ? ' <span class="badge">📄 Paper kept</span>' : '';
+  return (receiptBadge(e) + paper) || '<span class="badge warn">No receipt</span>';
+}
+function receiptWord(e){
+  const photo = (e.receipts||[]).length > 0;
+  return photo && e.paperKept ? 'Photo + paper' : photo ? 'Photo' : e.paperKept ? 'Paper' : 'No';
+}
+function renderTrips(){
+  const q = $('#tripSearch').value.toLowerCase();
+  const list = inYear(state.trips).filter(t => !q || [t.from,...(t.stops||[]),t.to,t.purpose,t.client,t.vehicle,t.notes].join(' ').toLowerCase().includes(q));
+  $('#tripList').innerHTML = list.length ? groupedList(list, t => `
+    <div class="item" data-id="${t.id}">
+      <div><div class="t">${esc(t.purpose || 'Trip')}</div>
+      <div class="m">${fmtDate(t.date)} · ${[t.from||'?', ...(t.stops||[]), t.to||'?'].map(esc).join(' → ')}${t.roundTrip?' (round trip)':''}${t.client?' · '+esc(t.client):''}${t.vehicle?' · '+esc(t.vehicle):''}</div>
+      ${receiptBadge(t)}${tripLinkBadge(t)}</div>
+      <div class="amt">${fmtMiles(tripMiles(t))}<div class="m">${money(tripDeduction(t))}</div></div>
+    </div>`, ts => `${fmtMiles(ts.reduce((s,t)=>s+tripMiles(t),0))} · ${money(ts.reduce((s,t)=>s+tripDeduction(t),0))}`) : `<div class="empty">${q ? 'No trips match your search.' : `No trips logged for ${state.year} yet. Tap “+ Add trip” to log one.`}</div>`;
+  $('#tripList').querySelectorAll('.item').forEach(el => el.onclick = () => tripEditor.open(state.trips.find(t => t.id === el.dataset.id)));
+  addDeleteButtons('#tripList', 'trips', state.trips, t => t.purpose || 'this trip');
+}
+function renderExpenses(){
+  const q = $('#expSearch').value.toLowerCase();
+  const list = inYear(state.expenses).filter(e => !q || [e.vendor,e.category,e.reason,e.attendees,e.payment,e.notes].join(' ').toLowerCase().includes(q));
+  $('#expList').innerHTML = list.length ? groupedList(list, e => `
+    <div class="item" data-id="${e.id}">
+      <div><div class="t">${esc(e.vendor || e.category)}</div>
+      <div class="m">${fmtDate(e.date)} · ${esc(e.category)} · ${esc(e.reason)}${e.attendees?' · with '+esc(e.attendees):''}</div>
+      ${receiptBadges(e)}${expLinkBadge(e)}</div>
+      <div class="amt">${money(expTotal(e))}${e.payment?`<div class="m">${esc(e.payment)}</div>`:''}</div>
+    </div>`, es => money(es.reduce((s,e)=>s+expTotal(e),0))) : `<div class="empty">${q ? 'No expenses match your search.' : `No meals or expenses logged for ${state.year} yet. Tap “+ Add meal / expense” to log one.`}</div>`;
+  $('#expList').querySelectorAll('.item').forEach(el => el.onclick = () => expEditor.open(state.expenses.find(e => e.id === el.dataset.id)));
+  addDeleteButtons('#expList', 'expenses', state.expenses, e => e.vendor || e.category);
+}
+function renderAppearance(){
+  const cur = state.settings.theme || 'classic', mode = state.settings.mode || 'auto';
+  document.querySelectorAll('#modeBtns button').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+    b.onclick = async () => { await saveSetting('mode', b.dataset.mode); applyTheme(cur, b.dataset.mode); renderAppearance(); };
+  });
+  $('#swatches').innerHTML = Object.entries(THEMES).map(([key, t]) => `
+    <button class="swatch ${key === cur ? 'active' : ''}" data-theme="${key}" title="${t.name}">
+      <div class="chips">
+        <span style="background:${t.light.bg}"><i style="background:${t.light.accent}"></i><i style="background:${t.light.text}"></i></span>
+        <span style="background:${t.dark.bg}"><i style="background:${t.dark.accent}"></i><i style="background:${t.dark.text}"></i></span>
+      </div>${t.name}</button>`).join('');
+  $('#swatches').querySelectorAll('.swatch').forEach(b => b.onclick = async () => {
+    await saveSetting('theme', b.dataset.theme); applyTheme(b.dataset.theme, mode); renderAppearance();
+  });
+}
+function renderSettings(){
+  renderAppearance(); renderPlaces();
+  const rates = [...state.settings.rates].sort((a,b) => b.from.localeCompare(a.from));
+  $('#rateTable').innerHTML = '<tr><th>Effective from</th><th class="num">Rate ($ per mile)</th><th></th></tr>' + rates.map((r,i) => `
+    <tr><td>${fmtDate(r.from)}</td>
+    <td class="num"><input type="number" step="0.001" min="0" value="${r.rate}" data-from="${r.from}" style="width:110px;text-align:right"></td>
+    <td class="num"><button class="btn small danger" data-remove="${r.from}">Remove</button></td></tr>`).join('');
+  $('#rateTable').querySelectorAll('input').forEach(inp => inp.onchange = async () => {
+    const rates = state.settings.rates.map(r => r.from === inp.dataset.from ? {...r, rate:num(inp.value)} : r);
+    await saveSetting('rates', rates); renderAll();
+  });
+  $('#rateTable').querySelectorAll('[data-remove]').forEach(b => b.onclick = async () => {
+    if (state.settings.rates.length <= 1) return alert('Keep at least one rate.');
+    if (!confirm('Remove this rate? Trips will use the previous rate instead.')) return;
+    await saveSetting('rates', state.settings.rates.filter(r => r.from !== b.dataset.remove)); renderAll();
+  });
+  const lb = state.settings.lastBackup;
+  $('#lastBackup').textContent = lb ? `Last backup downloaded: ${new Date(lb).toLocaleString()}` : 'No backup downloaded yet.';
+}
+function renderDatalists(){
+  const fill = (id, vals) => { $(id).innerHTML = [...new Set(vals.filter(Boolean))].sort().map(v => `<option value="${esc(v)}">`).join(''); };
+  const trips = forBiz(state.trips);
+  fill('#vehicleList', trips.map(t => t.vehicle));
+  fill('#placeList', [...trips.flatMap(t => [t.from, ...(t.stops||[]), t.to]), ...state.settings.savedPlaces.map(p => p.address)]);
+  fill('#clientList', trips.map(t => t.client));
+  fill('#vendorList', forBiz([...state.expenses, ...state.equipment]).map(e => e.vendor));
+}
+function renderBusinesses(){
+  const bs = state.settings.businesses, cur = curBiz();
+  $('#bizTitle').textContent = cur.name;
+  document.title = `${cur.name} – Mileage & Expense Log`;
+  $('#bizSel').innerHTML = bs.map(b => `<option value="${b.id}" ${b.id === cur.id ? 'selected' : ''}>${esc(b.name)}</option>`).join('') +
+    '<option value="__add">+ Add new business…</option>';
+  const count = (id, list) => list.filter(x => bizOf(x) === id).length;
+  $('#bizList').innerHTML = bs.map(b => `
+    <div class="biz-row"><div><div class="t">${esc(b.name)}${b.id === cur.id ? ' <span class="badge">current</span>' : ''}</div>
+      <div class="hint">${count(b.id, state.trips)} trips · ${count(b.id, state.expenses)} expenses · ${count(b.id, state.equipment)} tools/equipment (all years)</div></div>
+      <span class="row" style="gap:6px"><button class="btn small" data-rename="${b.id}">Rename</button>
+      ${bs.length > 1 ? `<button class="btn small danger" data-delbiz="${b.id}">Delete</button>` : ''}</span></div>`).join('');
+  $('#bizList').querySelectorAll('[data-rename]').forEach(b => b.onclick = () => renameBusiness(b.dataset.rename));
+  $('#bizList').querySelectorAll('[data-delbiz]').forEach(b => b.onclick = () => deleteBusiness(b.dataset.delbiz));
+}
+async function switchBusiness(id){ await saveSetting('currentBusiness', id); renderAll(); }
+async function addBusiness(){
+  const name = (prompt('Name of the new business:') || '').trim();
+  if (!name) return renderBusinesses();
+  const b = {id:uid(), name};
+  await saveSetting('businesses', [...state.settings.businesses, b]);
+  await switchBusiness(b.id);
+}
+async function renameBusiness(id){
+  const b = state.settings.businesses.find(x => x.id === id);
+  const name = (prompt('Business name:', b.name) || '').trim();
+  if (!name) return;
+  await saveSetting('businesses', state.settings.businesses.map(x => x.id === id ? {...x, name} : x));
+  renderAll();
+}
+async function deleteBusiness(id){
+  const b = state.settings.businesses.find(x => x.id === id);
+  const trips = state.trips.filter(x => bizOf(x) === id), exps = [...state.expenses, ...state.equipment].filter(x => bizOf(x) === id);
+  if (!confirm(`Delete "${b.name}"?\n\nThis permanently deletes its ${trips.length} trips and ${exps.length} expenses, including their receipts. This cannot be undone.\n\nTip: download a backup first.`)) return;
+  for (const e of [...trips, ...exps]) for (const r of e.receipts || []) await delOne('receipts', r);
+  for (const t of trips) await delOne('trips', t.id);
+  for (const e of exps) await delOne('expenses', e.id);
+  const rest = state.settings.businesses.filter(x => x.id !== id);
+  await saveSetting('businesses', rest);
+  if (state.settings.currentBusiness === id) await saveSetting('currentBusiness', rest[0].id);
+  await reload();
+}
+$('#bizSel').onchange = () => { const v = $('#bizSel').value; v === '__add' ? addBusiness() : switchBusiness(v); };
+$('#addBiz').onclick = addBusiness;
+$('#renameBiz').onclick = () => renameBusiness(curBiz().id);
+function renderAll(){ renderBusinesses(); renderYears(); renderSummary(); renderTrips(); renderGps(); renderExpenses(); renderEquipment(); renderSettings(); renderDatalists(); }
+
+async function reload(){
+  state.trips = await getAll('trips');
+  const allExp = await getAll('expenses');
+  state.expenses = allExp.filter(e => e.kind !== 'equipment');
+  state.equipment = allExp.filter(e => e.kind === 'equipment');
+  renderAll();
+}
+
+/* ---------- tabs & controls ---------- */
+document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav.tabs button').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('active', s.id === 'tab-' + b.dataset.tab));
+});
+$('#year').onchange = () => { state.year = +$('#year').value; state.rangeFrom = state.rangeTo = ''; $('#rangeFrom').value = $('#rangeTo').value = ''; renderAll(); };
+document.querySelectorAll('#groupBtns button').forEach(b => b.onclick = () => {
+  state.groupBy = b.dataset.group; try { localStorage.setItem('mel-group', state.groupBy); } catch(e) {}
+  renderSummary();
+});
+try { const g = localStorage.getItem('mel-group'); if (g) state.groupBy = g; } catch(e) {}
+$('#rangeFrom').onchange = $('#rangeTo').onchange = () => { state.rangeFrom = $('#rangeFrom').value; state.rangeTo = $('#rangeTo').value; renderSummary(); };
+$('#rangeClear').onclick = () => { state.rangeFrom = state.rangeTo = ''; $('#rangeFrom').value = $('#rangeTo').value = ''; renderSummary(); };
+$('#tripSearch').oninput = renderTrips;
+$('#expSearch').oninput = renderExpenses;
+$('#addRate').onclick = async () => {
+  const from = $('#newRateDate').value, rate = num($('#newRateVal').value);
+  if (!from || !rate) return alert('Enter both the date the rate starts and the rate (for example 0.76).');
+  const rates = state.settings.rates.filter(r => r.from !== from).concat({from, rate});
+  await saveSetting('rates', rates);
+  $('#newRateDate').value = ''; $('#newRateVal').value = ''; renderAll();
+};
+
+/* ---------- CSV export ---------- */
+const csvCell = v => { const s = String(v ?? ''); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
+const toCsv = rows => '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+const safe = s => String(s||'').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').slice(0,40);
+const fileTag = () => `${safe(bizName()) || "business"}-${state.year}`;
+
+// Build receipt filenames once so CSV and zip match.
+async function receiptPlan(){
+  const plan = [];   // {entryId, id, path}
+  inYear(state.trips).slice().reverse().forEach((t, i) => (t.receipts||[]).forEach((id, j) =>
+    plan.push({entryId:t.id, id, base:`receipts/trips/${t.date}_trip-${String(i+1).padStart(3,'0')}_${safe(t.to||t.purpose)}_${j+1}`})));
+  inYear(state.expenses).slice().reverse().forEach((e, i) => (e.receipts||[]).forEach((id, j) =>
+    plan.push({entryId:e.id, id, base:`receipts/expenses/${e.date}_exp-${String(i+1).padStart(3,'0')}_${safe(e.vendor||e.category)}_${j+1}`})));
+  inYear(state.equipment).slice().reverse().forEach((e, i) => (e.receipts||[]).forEach((id, j) =>
+    plan.push({entryId:e.id, id, base:`receipts/tools-equipment/${e.date}_eq-${String(i+1).padStart(3,"0")}_${safe(e.item||e.category)}_${j+1}`})));
+  for (const p of plan){ const r = await getOne('receipts', p.id); p.rec = r; p.path = r ? p.base + extOf(r) : null; }
+  return plan.filter(p => p.rec);
+}
+function tripsCsv(plan){
+  const rows = [['Date','From','Stops','To','Business purpose','Client / project','Vehicle','Odometer start','Odometer end','Round trip','Miles (one way)','Total miles','Rate ($/mi)','Deduction ($)','Notes','Receipt files']];
+  inYear(state.trips).slice().reverse().forEach(t => rows.push([t.date,t.from,(t.stops||[]).join('; '),t.to,t.purpose,t.client,t.vehicle,t.odoStart,t.odoEnd,t.roundTrip?'Yes':'No',
+    num(t.miles),tripMiles(t),rateFor(t.date),tripDeduction(t).toFixed(2),t.notes,plan.filter(p=>p.entryId===t.id).map(p=>p.path).join('; ')]));
+  const trips = inYear(state.trips);
+  rows.push([], ['TOTAL','','','','','','','','','','',trips.reduce((s,t)=>s+tripMiles(t),0),'',trips.reduce((s,t)=>s+tripDeduction(t),0).toFixed(2)]);
+  return toCsv(rows);
+}
+function expensesCsv(plan){
+  const rows = [['Date','Type','Place / vendor','Amount ($)','Tip ($)','Total ($)','Payment method','Business reason','Attendees','Linked trip','Paper receipt kept','Notes','Receipt files']];
+  inYear(state.expenses).slice().reverse().forEach(e => rows.push([e.date,e.category,e.vendor,num(e.amount).toFixed(2),e.tip?num(e.tip).toFixed(2):'',expTotal(e).toFixed(2),
+    e.payment,e.reason,e.attendees,linkedTripText(e),e.paperKept?'Yes':'No',e.notes,plan.filter(p=>p.entryId===e.id).map(p=>p.path).join('; ')]));
+  rows.push([], ['TOTAL','','','','',inYear(state.expenses).reduce((s,e)=>s+expTotal(e),0).toFixed(2)]);
+  return toCsv(rows);
+}
+$('#btnTripsCsv').onclick = async () => download(new Blob([tripsCsv(await receiptPlan())], {type:'text/csv'}), `${fileTag()}-mileage.csv`);
+$('#btnExpCsv').onclick = async () => download(new Blob([expensesCsv(await receiptPlan())], {type:'text/csv'}), `${fileTag()}-expenses.csv`);
+$('#btnEqCsv').onclick = async () => download(new Blob([equipmentCsv(await receiptPlan())], {type:'text/csv'}), `${fileTag()}-tools-equipment.csv`);
+/* ---------- printable tax report ---------- */
+function buildPrintReport(){
+  const trips = inYear(state.trips).slice().reverse(), exps = inYear(state.expenses).slice().reverse();
+  const miles = trips.reduce((s,t)=>s+tripMiles(t),0), ded = trips.reduce((s,t)=>s+tripDeduction(t),0);
+  const meals = exps.filter(e=>e.category==='Meal').reduce((s,e)=>s+expTotal(e),0);
+  const other = exps.filter(e=>e.category!=='Meal').reduce((s,e)=>s+expTotal(e),0);
+  const eqs = inYear(state.equipment).slice().reverse(), equip = eqs.reduce((s,e)=>s+eqBiz(e),0);
+  const rates = [...state.settings.rates].sort((a,b)=>a.from.localeCompare(b.from));
+  const jan1 = `${state.year}-01-01`;
+  const carried = rates.filter(r => r.from <= jan1).pop();   // rate in effect on Jan 1
+  const used = [carried, ...rates.filter(r => r.from > jan1 && yearOf(r.from) === state.year)].filter(Boolean)
+    .map(r => r === carried ? {...r, from: jan1 > r.from ? jan1 : r.from} : r);
+  const cats = {}; exps.forEach(e => { cats[e.category] = (cats[e.category]||0) + expTotal(e); });
+  $('#printArea').innerHTML = `
+    <h1>${esc(bizName())}</h1><div style="font-size:14px;font-weight:600;margin-bottom:2px">Business Mileage &amp; Expense Report — ${state.year}</div>
+    <div class="note">Prepared ${new Date().toLocaleDateString()} · IRS standard mileage rate(s) used: ${used.map(r=>`$${r.rate}/mi from ${fmtDate(r.from)}`).join('; ') || 'n/a'}</div>
+    <div class="sum">
+      <div>Business miles<b>${(Math.round(miles*10)/10).toLocaleString('en-US')}</b></div>
+      <div>Mileage deduction<b>${money(ded)}</b></div>
+      <div>Business meals<b>${money(meals)}</b><span class="note">50% = ${money(meals/2)}</span></div>
+      <div>Other expenses<b>${money(other)}</b></div>
+      <div>Tools &amp; equipment<b>${money(equip)}</b><span class="note">business portion</span></div>
+    </div>
+    ${(() => { const t = breakdownTable(trips, [...exps, ...eqs], true); return t ? `<h2>Totals by ${state.groupBy}${state.rangeFrom||state.rangeTo ? ` (${state.rangeFrom ? fmtDate(state.rangeFrom) : 'start'} – ${state.rangeTo ? fmtDate(state.rangeTo) : 'end'})` : ''}</h2><table>${t}</table>` : ''; })()}
+    <h2>Mileage log (${trips.length} trip${trips.length===1?'':'s'})</h2>
+    ${trips.length ? `<table><thead><tr><th>Date</th><th>From</th><th>To</th><th>Business purpose</th><th>Client</th><th>Vehicle</th><th class="num">Odometer</th><th class="num">Miles</th><th class="num">Rate</th><th class="num">Deduction</th></tr></thead><tbody>
+      ${trips.map(t=>`<tr><td>${fmtDate(t.date)}</td><td>${esc(t.from)}</td><td>${(t.stops||[]).length ? `<span class="note">via ${(t.stops).map(esc).join("; ")}</span><br>` : ""}${esc(t.to)}</td><td>${esc(t.purpose)}</td><td>${esc(t.client)}</td><td>${esc(t.vehicle)}</td>
+        <td class="num">${t.odoStart||t.odoEnd ? esc(t.odoStart)+'–'+esc(t.odoEnd) : ''}</td><td class="num">${tripMiles(t)}${t.roundTrip?' (RT)':''}</td><td class="num">$${rateFor(t.date)}</td><td class="num">${money(tripDeduction(t))}</td></tr>`).join('')}
+      </tbody><tfoot><tr><td colspan="7">Total</td><td class="num">${(Math.round(miles*10)/10)}</td><td></td><td class="num">${money(ded)}</td></tr></tfoot></table>` : '<p>No trips logged.</p>'}
+    <h2>Meals &amp; expenses (${exps.length})</h2>
+    ${exps.length ? `<table><thead><tr><th>Date</th><th>Type</th><th>Place / vendor</th><th>Business reason</th><th>Attendees</th><th>Paid by</th><th class="num">Amount</th><th class="num">Tip</th><th class="num">Total</th><th>Receipt</th></tr></thead><tbody>
+      ${exps.map(e=>`<tr><td>${fmtDate(e.date)}</td><td>${esc(e.category)}</td><td>${esc(e.vendor)}</td><td>${esc(e.reason)}</td><td>${esc(e.attendees)}</td><td>${esc(e.payment)}</td>
+        <td class="num">${money(num(e.amount))}</td><td class="num">${e.tip?money(num(e.tip)):''}</td><td class="num">${money(expTotal(e))}</td><td>${receiptWord(e)}</td></tr>`).join('')}
+      </tbody><tfoot><tr><td colspan="8">Total</td><td class="num">${money(meals+other)}</td><td></td></tr></tfoot></table>
+      ${eqs.length ? `<h2>Tools &amp; equipment (${eqs.length})</h2><table><thead><tr><th>Purchase date</th><th>Type</th><th>Item</th><th>Store / vendor</th><th>Business reason</th><th>Model / serial</th><th class="num">Cost</th><th class="num">Business use</th><th class="num">Business portion</th><th>Receipt</th></tr></thead><tbody>
+        ${eqs.map(e=>`<tr><td>${fmtDate(e.date)}</td><td>${esc(e.category)}</td><td>${esc(e.item)}</td><td>${esc(e.vendor)}</td><td>${esc(e.reason)}</td><td>${esc(e.serial)}</td>
+          <td class="num">${money(num(e.amount))}</td><td class="num">${eqPct(e)}%</td><td class="num">${money(eqBiz(e))}</td><td>${receiptWord(e)}</td></tr>`).join('')}
+        </tbody><tfoot><tr><td colspan="8">Total</td><td class="num">${money(equip)}</td><td></td></tr></tfoot></table>` : ''}
+      <h2>Totals by type</h2><table style="width:auto"><tbody>${Object.entries(cats).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="num">${money(v)}</td></tr>`).join('')}</tbody></table>` : '<p>No expenses logged.</p>'}
+    <p class="note" style="margin-top:14px">Meals are generally 50% deductible; confirm with your tax professional. Receipt images are included in the accountant package (.zip).</p>`;
+}
+$('#btnPrint').onclick = () => { buildPrintReport(); window.print(); };
+window.addEventListener('beforeprint', buildPrintReport);
+$('#tripCsv2').onclick = () => $('#btnTripsCsv').click();
+$('#expCsv2').onclick = () => $('#btnExpCsv').click();
+$('#eqCsv2').onclick = () => $('#btnEqCsv').click();
+
+/* ---------- simple ZIP writer (no compression; works offline) ---------- */
+const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = c&1 ? 0xEDB88320^(c>>>1) : c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(u8){ let c = 0xFFFFFFFF; for (let i=0;i<u8.length;i++) c = CRC_TABLE[(c^u8[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function makeZip(files){
+  const enc = new TextEncoder(), parts = [], central = []; let offset = 0;
+  const d = new Date(), time = (d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1), date = ((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate();
+  for (const f of files){
+    const name = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true); lh.setUint16(8,0,true);
+    lh.setUint16(10,time,true); lh.setUint16(12,date,true); lh.setUint32(14,crc,true); lh.setUint32(18,size,true); lh.setUint32(22,size,true);
+    lh.setUint16(26,name.length,true); lh.setUint16(28,0,true);
+    parts.push(lh.buffer, name, f.data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true); ch.setUint16(10,0,true);
+    ch.setUint16(12,time,true); ch.setUint16(14,date,true); ch.setUint32(16,crc,true); ch.setUint32(20,size,true); ch.setUint32(24,size,true);
+    ch.setUint16(28,name.length,true); ch.setUint32(42,offset,true);
+    central.push(ch.buffer, name);
+    offset += 30 + name.length + size;
+  }
+  const cdSize = central.reduce((s,b) => s + b.byteLength, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true); end.setUint16(8,files.length,true); end.setUint16(10,files.length,true); end.setUint32(12,cdSize,true); end.setUint32(16,offset,true);
+  return new Blob([...parts, ...central, end.buffer], {type:'application/zip'});
+}
+$('#btnPackage').onclick = async () => {
+  const btn = $('#btnPackage'); btn.disabled = true; btn.textContent = 'Preparing…';
+  try {
+    const enc = new TextEncoder(), plan = await receiptPlan();
+    const trips = inYear(state.trips), exps = inYear(state.expenses);
+    const meals = exps.filter(e=>e.category==='Meal').reduce((s,e)=>s+expTotal(e),0);
+    const summary = [`${bizName()}`, `Mileage & expense summary for ${state.year}`, `Prepared ${new Date().toLocaleString()}`, '',
+      `Business miles: ${trips.reduce((s,t)=>s+tripMiles(t),0).toFixed(1)}`,
+      `Mileage deduction (IRS standard rate): ${money(trips.reduce((s,t)=>s+tripDeduction(t),0))}`,
+      `Rates used: ${[...state.settings.rates].sort((a,b)=>a.from.localeCompare(b.from)).filter(r=>yearOf(r.from)<=state.year).map(r=>`${fmtDate(r.from)}: $${r.rate}/mi`).join(', ')}`,
+      `Business meals: ${money(meals)}`, `Other expenses: ${money(exps.filter(e=>e.category!=='Meal').reduce((s,e)=>s+expTotal(e),0))}`, `Tools & equipment (business portion): ${money(inYear(state.equipment).reduce((s,e)=>s+eqBiz(e),0))}`, '',
+      `Trips: ${trips.length}   Expenses: ${exps.length}   Receipt files: ${plan.length}`].join('\r\n');
+    const files = [
+      {name:`${fileTag()}-summary.txt`, data:enc.encode(summary)},
+      {name:`${fileTag()}-mileage.csv`, data:enc.encode(tripsCsv(plan))},
+      {name:`${fileTag()}-expenses.csv`, data:enc.encode(expensesCsv(plan))},
+      {name:`${fileTag()}-tools-equipment.csv`, data:enc.encode(equipmentCsv(plan))},
+    ];
+    for (const p of plan) files.push({name:p.path, data:new Uint8Array(await p.rec.blob.arrayBuffer())});
+    download(makeZip(files), `${fileTag()}-tax-records.zip`);
+  } finally { btn.disabled = false; btn.textContent = 'Download accountant package (.zip)'; }
+};
+
+/* ---------- backup / restore ---------- */
+const blobToDataUrl = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(b); });
+$('#btnBackup').onclick = async () => {
+  const receipts = [];
+  for (const r of await getAll('receipts')) receipts.push({id:r.id, name:r.name, type:r.type, created:r.created, data:await blobToDataUrl(r.blob)});
+  const backup = {app:'mileage-expense-log', version:1, exported:new Date().toISOString(),
+    trips:state.trips, expenses:[...state.expenses, ...state.equipment], settings:{rates:state.settings.rates, lastVehicle:state.settings.lastVehicle, businesses:state.settings.businesses, currentBusiness:state.settings.currentBusiness}, receipts};
+  download(new Blob([JSON.stringify(backup)], {type:'application/json'}), `mileage-log-backup-${today()}.json`);
+  await saveSetting('lastBackup', new Date().toISOString()); renderAll();
+};
+$('#btnRestore').onclick = () => $('#restoreFile').click();
+$('#restoreFile').onchange = async () => {
+  const f = $('#restoreFile').files[0]; $('#restoreFile').value = '';
+  if (!f) return;
+  let data;
+  try { data = JSON.parse(await f.text()); } catch { return alert('That file is not a valid backup.'); }
+  if (data.app !== 'mileage-expense-log') return alert('That file is not a backup from this app.');
+  if (!confirm(`Restore backup from ${new Date(data.exported).toLocaleString()}?\n\nIt has ${data.trips.length} trips, ${data.expenses.length} expenses and ${data.receipts.length} receipts.\n\nThis REPLACES everything currently in this app on this device.`)) return;
+  for (const s of ['trips','expenses','receipts']) await clearStore(s);
+  for (const t of data.trips) await putOne('trips', t);
+  for (const e of data.expenses) await putOne('expenses', e);
+  for (const r of data.receipts) { const blob = await (await fetch(r.data)).blob(); await putOne('receipts', {id:r.id, name:r.name, type:r.type, created:r.created, blob}); }
+  if (data.settings?.rates) await saveSetting('rates', data.settings.rates);
+  if (data.settings?.lastVehicle) await saveSetting('lastVehicle', data.settings.lastVehicle);
+  if (data.settings?.businesses) { await saveSetting('businesses', data.settings.businesses); await saveSetting('currentBusiness', data.settings.currentBusiness || data.settings.businesses[0].id); }
+  alert('Backup restored.'); await reload();
+};
+
+/* ---------- start ---------- */
+/* ---------- installable app: offline support + install button ---------- */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; $('#installBtn').classList.remove('hidden'); });
+window.addEventListener('appinstalled', () => { installPrompt = null; $('#installBtn').classList.add('hidden'); });
+$('#installBtn').onclick = async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  await installPrompt.userChoice.catch(() => {});
+  installPrompt = null; $('#installBtn').classList.add('hidden');
+};
+
+(async () => {
+  try {
+    db = await openDB();
+  } catch (e) {
+    document.querySelector('main').innerHTML = '<section class="active"><p>This browser is blocking storage for this page, so the log cannot be saved. Try opening the file in Microsoft Edge or Google Chrome (not a private/InPrivate window).</p></section>';
+    return;
+  }
+  for (const s of await getAll('settings')) state.settings[s.key] = s.value;
+  applyTheme(state.settings.theme, state.settings.mode);
+  // Make sure older IRS rates exist even if rates were saved before they were added.
+  const earliest = state.settings.rates.reduce((m, r) => r.from < m ? r.from : m, '9999');
+  const older = DEFAULT_RATES.filter(r => r.from < earliest);
+  if (older.length) await saveSetting('rates', [...older, ...state.settings.rates]);
+  if (navigator.storage?.persist) navigator.storage.persist().catch(() => {});
+  if (navigator.storage?.estimate) navigator.storage.estimate().then(e => {
+    $('#storageInfo').textContent = `Space used on this device: ${(e.usage/1048576).toFixed(1)} MB.`;
+  }).catch(() => {});
+  await reload();
+})();
+</script>
+</body>
+</html>

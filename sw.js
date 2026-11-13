@@ -1,6 +1,6 @@
 // Offline support for Mileage & Expense Log.
 // Change VERSION whenever the app files change so phones and PCs pick up the update.
-const VERSION = 'v8';
+const VERSION = 'v9';
 const CACHE = 'mileage-log-' + VERSION;
 const APP_FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/icon-180.png'];
 

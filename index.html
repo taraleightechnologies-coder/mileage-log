@@ -78,6 +78,15 @@ dialog form{padding:16px}
 .thumb .x{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;cursor:pointer;line-height:22px;padding:0}
 #viewer img{display:block;max-width:100%;max-height:80vh;margin:0 auto}
 .hidden{display:none !important}
+.note-nav{margin-bottom:12px}
+.note-nav input{width:auto;flex:1;max-width:220px}
+.paper{position:relative;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:16px 18px 18px 52px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.paper::before{content:"";position:absolute;top:0;bottom:0;left:38px;border-left:2px solid var(--accent);opacity:.35}
+.paper-date{font-size:18px;font-weight:700;margin-bottom:6px;color:var(--accent)}
+.paper textarea{border:0;border-radius:0;padding:0;min-height:360px;font-size:16px;line-height:30px;background:transparent;resize:vertical;background-image:repeating-linear-gradient(to bottom, transparent 0, transparent 29px, var(--line) 29px, var(--line) 30px);background-attachment:local}
+.paper textarea:focus{outline:none}
+.today-note{border-left:4px solid var(--accent);background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;cursor:pointer;font-size:14px;white-space:pre-line}
+.today-note b{display:block;margin-bottom:2px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
 .chip{border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;cursor:pointer}
 .chip:hover{border-color:var(--accent);color:var(--accent)}
@@ -181,12 +190,14 @@ dialog form{padding:16px}
   <button data-tab="trips">Trips</button>
   <button data-tab="expenses">Meals &amp; Expenses</button>
   <button data-tab="equipment">Tools &amp; Equipment</button>
+  <button data-tab="notes">📝 Notes</button>
   <button data-tab="settings">Settings &amp; Backup</button>
 </nav>
 <main>
   <!-- SUMMARY -->
   <section id="tab-summary" class="active">
     <div id="backupNotice" class="notice hidden"></div>
+    <div id="todayNote" class="today-note hidden"></div>
     <div class="stats" id="stats"></div>
     <div class="row" style="margin-bottom:18px">
       <button class="btn primary" id="btnPackage">Download accountant package (.zip)</button>
@@ -243,6 +254,27 @@ dialog form{padding:16px}
     </div>
     <p class="hint" style="margin:8px 0 0">For tools, machines, computers and other gear you buy for the business. Larger items may need to be depreciated instead of deducted all at once; your accountant will decide using this list.</p>
     <div class="list" id="eqList"></div>
+  </section>
+
+  <!-- NOTES DIARY -->
+  <section id="tab-notes">
+    <div class="row note-nav">
+      <button class="btn" id="notePrev" title="Previous day" aria-label="Previous day">◀</button>
+      <input type="date" id="noteDate" aria-label="Choose a date">
+      <button class="btn" id="noteNext" title="Next day" aria-label="Next day">▶</button>
+      <button class="btn small" id="noteToday">Today</button>
+    </div>
+    <div class="paper">
+      <div class="paper-date" id="noteHeading"></div>
+      <textarea id="noteText" placeholder="Write anything: reminders, documents to check, things to ask your accountant…"></textarea>
+    </div>
+    <div class="row" style="justify-content:space-between;margin:8px 0 22px">
+      <span class="hint" id="noteSaved">Saves automatically as you type.</span>
+      <button class="btn small danger" id="noteErase">Erase this page</button>
+    </div>
+    <h2>Pages with notes</h2>
+    <input id="noteSearch" type="search" placeholder="Search your notes…">
+    <div class="list" id="noteIndex"></div>
   </section>
 
   <!-- SETTINGS -->
@@ -410,10 +442,11 @@ const DB_NAME = 'mileage-expense-log';
 let db;
 function openDB(){
   return new Promise((res, rej) => {
-    const r = indexedDB.open(DB_NAME, 1);
+    const r = indexedDB.open(DB_NAME, 2);
     r.onupgradeneeded = () => {
       const d = r.result;
       for (const s of ['trips','expenses','receipts']) if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, {keyPath:'id'});
+      if (!d.objectStoreNames.contains('notes')) d.createObjectStore('notes', {keyPath:'date'});   // diary pages, one per date
       if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings', {keyPath:'key'});
     };
     r.onsuccess = () => res(r.result);
@@ -440,7 +473,7 @@ const DEFAULT_RATES = [
   {from:'2026-07-01', rate:0.76},
 ];
 
-const state = { trips:[], expenses:[], equipment:[], receiptMeta:new Map(), settings:{ rates:DEFAULT_RATES, lastBackup:null, lastVehicle:'', businesses:[{id:'default', name:'My Business'}], currentBusiness:'default', savedPlaces:[{id:'home', name:'Home', icon:'🏠', address:''}, {id:'work', name:'Work', icon:'🏢', address:''}], activeTrip:null }, year:new Date().getFullYear(), groupBy:'day', rangeFrom:'', rangeTo:'' };
+const state = { trips:[], expenses:[], equipment:[], notes:new Map(), receiptMeta:new Map(), settings:{ rates:DEFAULT_RATES, lastBackup:null, lastVehicle:'', businesses:[{id:'default', name:'My Business'}], currentBusiness:'default', savedPlaces:[{id:'home', name:'Home', icon:'🏠', address:''}, {id:'work', name:'Work', icon:'🏢', address:''}], activeTrip:null }, year:new Date().getFullYear(), groupBy:'day', rangeFrom:'', rangeTo:'' };
 
 /* ---------- businesses ---------- */
 // Entries made before businesses existed (or from an unknown business) belong to the first business.
@@ -1263,10 +1296,75 @@ async function deleteBusiness(id){
 $('#bizSel').onchange = () => { const v = $('#bizSel').value; v === '__add' ? addBusiness() : switchBusiness(v); };
 $('#addBiz').onclick = addBusiness;
 $('#renameBiz').onclick = () => renameBusiness(curBiz().id);
-function renderAll(){ renderBusinesses(); renderYears(); renderSummary(); renderTrips(); renderGps(); renderExpenses(); renderEquipment(); renderSettings(); renderDatalists(); }
+
+/* ---------- Notes diary: one blank page per date ---------- */
+let noteDay = null, noteTimer = null;
+const longDate = s => parseDate(s).toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+function showNotePage(date){
+  flushNote();
+  noteDay = date;
+  $('#noteDate').value = date;
+  $('#noteHeading').textContent = longDate(date) + (date === today() ? ' · Today' : '');
+  $('#noteText').value = state.notes.get(date)?.text || '';
+  const n = state.notes.get(date);
+  $('#noteSaved').textContent = n ? `Last saved ${new Date(n.updated).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'})}` : 'Saves automatically as you type.';
+  $('#noteErase').classList.toggle('hidden', !n);
+}
+async function saveNote(){
+  clearTimeout(noteTimer); noteTimer = null;
+  if (!noteDay) return;
+  const text = $('#noteText').value, date = noteDay;
+  if (text.trim()) {
+    const n = {date, text, updated:new Date().toISOString()};
+    state.notes.set(date, n); await putOne('notes', n);
+    $('#noteSaved').textContent = 'Saved ✓'; $('#noteErase').classList.remove('hidden');
+  } else if (state.notes.has(date)) {
+    state.notes.delete(date); await delOne('notes', date);
+    $('#noteSaved').textContent = 'Page is blank.'; $('#noteErase').classList.add('hidden');
+  }
+  renderNoteIndex(); renderTodayNote();
+}
+function flushNote(){ if (noteTimer) saveNote(); }
+$('#noteText').addEventListener('input', () => { $('#noteSaved').textContent = 'Saving…'; clearTimeout(noteTimer); noteTimer = setTimeout(saveNote, 600); });
+$('#noteText').addEventListener('blur', flushNote);
+window.addEventListener('pagehide', flushNote);
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushNote(); });
+const shiftDay = (d, n) => { const dt = parseDate(d); dt.setDate(dt.getDate() + n); return isoOf(dt); };
+$('#notePrev').onclick = () => showNotePage(shiftDay(noteDay, -1));
+$('#noteNext').onclick = () => showNotePage(shiftDay(noteDay, 1));
+$('#noteToday').onclick = () => showNotePage(today());
+$('#noteDate').onchange = () => { if ($('#noteDate').value) showNotePage($('#noteDate').value); };
+$('#noteErase').onclick = async () => {
+  if (!confirm(`Erase your notes for ${longDate(noteDay)}? This cannot be undone.`)) return;
+  $('#noteText').value = ''; await saveNote();
+};
+$('#noteSearch').oninput = () => renderNoteIndex();
+function renderNoteIndex(){
+  const q = $('#noteSearch').value.toLowerCase();
+  const pages = [...state.notes.values()].filter(n => !q || n.text.toLowerCase().includes(q)).sort((a,b) => b.date.localeCompare(a.date));
+  $('#noteIndex').innerHTML = pages.length ? pages.map(n => `
+    <div class="item" data-date="${n.date}"><div><div class="t">${longDate(n.date)}</div>
+    <div class="m">${esc(n.text.trim().slice(0, 140))}${n.text.trim().length > 140 ? '…' : ''}</div></div></div>`).join('')
+    : `<div class="empty">${q ? 'No notes match your search.' : 'No notes yet. Write on the page above and it saves by itself.'}</div>`;
+  $('#noteIndex').querySelectorAll('.item').forEach(el => el.onclick = () => { showNotePage(el.dataset.date); $('#noteText').focus(); window.scrollTo({top:0, behavior:'smooth'}); });
+}
+// Summary tab: show today's note as a reminder
+function renderTodayNote(){
+  const n = state.notes.get(today()), box = $('#todayNote');
+  box.classList.toggle('hidden', !n);
+  if (!n) return;
+  box.innerHTML = `<b>📝 Today's note</b>${esc(n.text.trim().slice(0, 300))}${n.text.trim().length > 300 ? '…' : ''}`;
+  box.onclick = () => { document.querySelector('nav.tabs [data-tab=notes]').click(); showNotePage(today()); };
+}
+function renderNotes(){
+  if (!noteDay || (!noteTimer && document.activeElement !== $('#noteText'))) showNotePage(noteDay || today());
+  renderNoteIndex(); renderTodayNote();
+}
+function renderAll(){ renderBusinesses(); renderYears(); renderSummary(); renderTrips(); renderGps(); renderExpenses(); renderEquipment(); renderSettings(); renderNotes(); renderDatalists(); }
 
 async function reload(){
   state.trips = await getAll('trips');
+  state.notes = new Map((await getAll('notes')).map(n => [n.date, n]));
   const allExp = await getAll('expenses');
   state.expenses = allExp.filter(e => e.kind !== 'equipment');
   state.equipment = allExp.filter(e => e.kind === 'equipment');
@@ -1433,7 +1531,7 @@ $('#btnBackup').onclick = async () => {
   const receipts = [];
   for (const r of await getAll('receipts')) receipts.push({id:r.id, name:r.name, type:r.type, created:r.created, data:await blobToDataUrl(r.blob)});
   const backup = {app:'mileage-expense-log', version:1, exported:new Date().toISOString(),
-    trips:state.trips, expenses:[...state.expenses, ...state.equipment], settings:{rates:state.settings.rates, lastVehicle:state.settings.lastVehicle, businesses:state.settings.businesses, currentBusiness:state.settings.currentBusiness}, receipts};
+    notes:[...state.notes.values()], trips:state.trips, expenses:[...state.expenses, ...state.equipment], settings:{rates:state.settings.rates, lastVehicle:state.settings.lastVehicle, businesses:state.settings.businesses, currentBusiness:state.settings.currentBusiness}, receipts};
   download(new Blob([JSON.stringify(backup)], {type:'application/json'}), `mileage-log-backup-${today()}.json`);
   await saveSetting('lastBackup', new Date().toISOString()); renderAll();
 };
@@ -1445,9 +1543,10 @@ $('#restoreFile').onchange = async () => {
   try { data = JSON.parse(await f.text()); } catch { return alert('That file is not a valid backup.'); }
   if (data.app !== 'mileage-expense-log') return alert('That file is not a backup from this app.');
   if (!confirm(`Restore backup from ${new Date(data.exported).toLocaleString()}?\n\nIt has ${data.trips.length} trips, ${data.expenses.length} expenses and ${data.receipts.length} receipts.\n\nThis REPLACES everything currently in this app on this device.`)) return;
-  for (const s of ['trips','expenses','receipts']) await clearStore(s);
+  for (const s of ['trips','expenses','receipts','notes']) await clearStore(s);
   for (const t of data.trips) await putOne('trips', t);
   for (const e of data.expenses) await putOne('expenses', e);
+  for (const n of data.notes || []) await putOne('notes', n);
   for (const r of data.receipts) { const blob = await (await fetch(r.data)).blob(); await putOne('receipts', {id:r.id, name:r.name, type:r.type, created:r.created, blob}); }
   if (data.settings?.rates) await saveSetting('rates', data.settings.rates);
   if (data.settings?.lastVehicle) await saveSetting('lastVehicle', data.settings.lastVehicle);

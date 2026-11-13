@@ -4,6 +4,8 @@ Log business mileage, meals and expenses with receipt photos, see yearly totals 
 standard mileage rate, print a tax report, and export CSV files for your accountant.
 Supports multiple businesses and color themes.
 
+**Open / install the app:** https://taraleightechnologies-coder.github.io/mileage-log/
+
 ## Files
 
 | File | What it is |
@@ -27,7 +29,8 @@ Use **Settings & Backup → Download backup** regularly, and **Restore** to move
 ## Roadmap
 
 1. Installable app (done)
-2. Host free on GitHub Pages
+2. Host free on GitHub Pages (done)
 3. Install on phone and both PCs
+3b. Share with a second person (Supabase sync)
 4. Google Play Store (PWABuilder → Android package; $25 Google Play developer account)
 5. Apple App Store (needs an Apple Developer account and a Mac, or a cloud Mac build service)
